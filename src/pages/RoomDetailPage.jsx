@@ -11,7 +11,7 @@ import { ReportModal } from "@/components/ReportModal";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { daysAgoLabel, formatKes, roomTypeLabel, whatsappLink } from "@/lib/format";
+import { campusShort, daysAgoLabel, formatKes, roomTypeLabel, whatsappLink } from "@/lib/format";
 const roomQuery = (id) => queryOptions({ queryKey: ["room", id], queryFn: () => getRoom(id) });
 const amenityIcon = { "Water 24/7": Droplets, WiFi: Wifi, Tokens: Zap, "Gated Security": ShieldCheck };
 const amenityLabel = { "Water 24/7": "Water 24/7", WiFi: "WiFi Available", Tokens: "Tokens (prepaid power)", "Gated Security": "Gated Security" };
@@ -176,9 +176,9 @@ export default function RoomDetailPage() {
           <section className="py-6">
             <h2 className="text-section mb-4">Getting to campus</h2>
             <ul className="space-y-3">
-              {Object.entries(room.distances).map(([c, d]) => (<li key={c} className="flex items-center gap-3">
+              {Object.entries(room.distances).filter(([, d]) => d?.walkMin || d?.matatuMin).map(([c, d]) => (<li key={c} className="flex items-center gap-3">
                   {d.walkMin ? <Footprints className="h-5 w-5" strokeWidth={1.5}/> : <Bus className="h-5 w-5" strokeWidth={1.5}/>}
-                  {d.walkMin ? `${d.walkMin} mins walk to ${c}` : `${d.matatuMin} mins matatu to ${c}`}
+                  {d.walkMin ? `${d.walkMin} mins walk to ${campusShort(c)}` : `${d.matatuMin} mins matatu to ${campusShort(c)}`}
                 </li>))}
               <li className="text-foggy">Matatu fare to campus: about {formatKes(room.matatuFareKes)}</li>
             </ul>

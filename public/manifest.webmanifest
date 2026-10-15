@@ -1,7 +1,7 @@
 {
   "name": "Rommie",
   "short_name": "Rommie",
-  "description": "Find cheap, vacant student rooms near CUEA, KSL and Co-operative University.",
+  "description": "Find cheap, vacant student rooms near CUEA, KSL, JKUAT Karen, Tangaza and Co-operative University.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

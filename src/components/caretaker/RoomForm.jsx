@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, SelectInput, TextInput } from "@/components/forms/Field";
 import { controlClass } from "@/components/forms/Field";
 import { MIN_PHOTOS, PhotoUploader } from "@/components/caretaker/PhotoUploader";
-import { AMENITY_OPTIONS, amenityFormLabel, AREAS, normalizeKenyanPhone, roomTypeLabel } from "@/lib/format";
+import { AMENITY_OPTIONS, amenityFormLabel, AREAS, CAMPUSES, normalizeKenyanPhone, roomTypeLabel } from "@/lib/format";
 import { phoneField } from "@/lib/validation";
 import { cn } from "@/lib/utils";
 const minutes = z.string().trim().refine((v) => v === "" || /^\d{1,3}$/.test(v), "Use whole minutes, like 10.");
@@ -25,15 +25,15 @@ const schema = z
     rent: wholeKes("the monthly rent"),
     depositTerms: z.string().trim().min(2, "Describe the deposit, or write “No deposit”.").max(120, "Keep this under 120 characters."),
     amenities: z.array(z.string()),
-    kslWalk: minutes, kslMatatu: minutes, cueaWalk: minutes, cueaMatatu: minutes, coopWalk: minutes, coopMatatu: minutes,
+    ...Object.fromEntries(CAMPUSES.flatMap((c) => [[`${c.key}Walk`, minutes], [`${c.key}Matatu`, minutes]])),
     matatuFare: wholeKes("the matatu fare", true),
     mapLink: z.string().trim().refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Paste a full link starting with https://"),
     whatsapp: phoneField,
     call: phoneField,
 })
     .superRefine((v, ctx) => {
-    if (![v.kslWalk, v.kslMatatu, v.cueaWalk, v.cueaMatatu, v.coopWalk, v.coopMatatu].some((x) => x !== "")) {
-        ctx.addIssue({ code: "custom", path: ["kslWalk"], message: "Add at least one walking or matatu time to a campus." });
+    if (!CAMPUSES.some((c) => v[`${c.key}Walk`] !== "" || v[`${c.key}Matatu`] !== "")) {
+        ctx.addIssue({ code: "custom", path: [`${CAMPUSES[0].key}Walk`], message: "Add at least one walking or matatu time to a campus." });
     }
 });
 const num = (v) => (v === "" ? undefined : Number(v));
@@ -57,9 +57,10 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
             rent: initial ? String(initial.rentKes) : "",
             depositTerms: initial?.depositTerms ?? "",
             amenities: initial?.amenities ?? [],
-            kslWalk: d?.KSL.walkMin?.toString() ?? "", kslMatatu: d?.KSL.matatuMin?.toString() ?? "",
-            cueaWalk: d?.CUEA.walkMin?.toString() ?? "", cueaMatatu: d?.CUEA.matatuMin?.toString() ?? "",
-            coopWalk: d?.["Co-op"].walkMin?.toString() ?? "", coopMatatu: d?.["Co-op"].matatuMin?.toString() ?? "",
+            ...Object.fromEntries(CAMPUSES.flatMap((c) => [
+                [`${c.key}Walk`, d?.[c.id]?.walkMin?.toString() ?? ""],
+                [`${c.key}Matatu`, d?.[c.id]?.matatuMin?.toString() ?? ""],
+            ])),
             matatuFare: initial ? String(initial.matatuFareKes) : "",
             mapLink: initial?.mapLink ?? "",
             whatsapp: initial?.whatsappNumber ?? accountPhone,
@@ -76,17 +77,14 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
                 : done.length < MIN_PHOTOS ? `Add at least ${MIN_PHOTOS} photos so students can see the room.`
                     : undefined;
     const uploading = photos.some((p) => p.status === "uploading");
-    const campusErr = [errors.kslWalk, errors.kslMatatu, errors.cueaWalk, errors.cueaMatatu, errors.coopWalk, errors.coopMatatu].find(Boolean)?.message;
+    const campusErr = CAMPUSES.flatMap((c) => [errors[`${c.key}Walk`], errors[`${c.key}Matatu`]]).find(Boolean)?.message;
     const bad = (m) => !!m;
     const valid = async (v) => {
         if (photos.some((p) => p.status !== "done") || done.length < MIN_PHOTOS)
             return;
         const area = v.area;
         const roomType = v.roomType;
-        const campus = (walk, matatu) => ({ walkMin: num(walk), matatuMin: num(matatu) });
-        const distances = {
-            KSL: campus(v.kslWalk, v.kslMatatu), CUEA: campus(v.cueaWalk, v.cueaMatatu), "Co-op": campus(v.coopWalk, v.coopMatatu),
-        };
+        const distances = Object.fromEntries(CAMPUSES.map((c) => [c.id, { walkMin: num(v[`${c.key}Walk`]), matatuMin: num(v[`${c.key}Matatu`]) }]));
         try {
             await onSubmit({
                 title: v.title, roomType, area,
@@ -156,13 +154,12 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
       </Section>
 
       <Section title="Getting to campus" hint="Fill in what applies. At least one time is needed.">
-        {["KSL", "CUEA", "Co-op"].map((c) => {
-            const k = c === "KSL" ? "ksl" : c === "CUEA" ? "cuea" : "coop";
-            return (<fieldset key={c}>
-              <legend className="mb-2 font-medium">{c}</legend>
+        {CAMPUSES.map((c) => {
+            return (<fieldset key={c.id}>
+              <legend className="mb-2 font-medium">{c.name}</legend>
               <div className="grid grid-cols-2 gap-3">
-                {time(`${k}Walk`, `${c} walk (min)`)}
-                {time(`${k}Matatu`, `${c} matatu (min)`)}
+                {time(`${c.key}Walk`, `${c.short} walk (min)`)}
+                {time(`${c.key}Matatu`, `${c.short} matatu (min)`)}
               </div>
             </fieldset>);
         })}

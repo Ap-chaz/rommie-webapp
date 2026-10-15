@@ -8,7 +8,7 @@ import { SearchCapsule } from "@/components/SearchCapsule";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { AREAS, roomTypeLabel } from "@/lib/format";
+import { AREAS, CAMPUS_IDS, roomTypeLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useAuthGate } from "@/lib/auth";
 const AMENITIES = ["Water 24/7", "WiFi", "Tokens", "Gated Security"];
@@ -19,16 +19,16 @@ const validateSearch = (s) => ({
     roomType: typeof s["roomType"] === "string" && s["roomType"] in roomTypeLabel ? s["roomType"] : undefined,
     minRent: num(s["minRent"]),
     maxRent: num(s["maxRent"]),
-    near: ["KSL", "CUEA", "Co-op"].includes(s["near"]) ? s["near"] : undefined,
+    near: CAMPUS_IDS.includes(s["near"]) ? s["near"] : undefined,
     amenities: Array.isArray(s["amenities"]) ? s["amenities"].filter((a) => AMENITIES.includes(a)) : undefined,
     vacantOnly: s["vacantOnly"] === false || s["vacantOnly"] === "false" ? false : undefined,
     sort: ["newest", "rent_asc", "rent_desc"].includes(s["sort"]) ? s["sort"] : undefined,
 });
 const PAGE_META = [
             { title: "Find a room near campus · Rommie" },
-            { name: "description", content: "Browse vacant bedsitters, single rooms and one bedrooms near CUEA, KSL and Co-op University." },
+            { name: "description", content: "Browse vacant bedsitters, single rooms and one bedrooms near CUEA, KSL, JKUAT Karen, Tangaza and Co-op University." },
             { property: "og:title", content: "Find a room near campus · Rommie" },
-            { property: "og:description", content: "Vacant rooms in Rongai, Gataka, Ngong, Karen and Maasai Lodge." },
+            { property: "og:description", content: "Vacant rooms in Rongai, Gataka, Karen and Maasai Lodge." },
         ];
 function Filters({ f, set }) {
     const vacantOnly = f.vacantOnly !== false;

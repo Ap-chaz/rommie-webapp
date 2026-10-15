@@ -4,14 +4,13 @@ import { Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { AREAS, roomTypeLabel } from "@/lib/format";
+import { AREAS, CAMPUSES, campusShort, roomTypeLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 const RENTS = [
     { label: "< KES 6,000", max: 6000 },
     { label: "KES 8,000", max: 8000 },
     { label: "KES 10,000+", min: 10000 },
 ];
-const CAMPUSES = ["KSL", "CUEA", "Co-op"];
 function Field({ label, placeholder, value, options, onPick, className }) {
     const [open, setOpen] = useState(false);
     return (<Popover open={open} onOpenChange={setOpen}>
@@ -34,13 +33,13 @@ export function SearchCapsule({ compact = false }) {
         to: "/rooms",
         search: { near: v.near, area: v.area, roomType: v.roomType, maxRent: v.rent && "max" in v.rent ? v.rent.max : undefined, minRent: v.rent && "min" in v.rent ? v.rent.min : undefined },
     });
-    const campusOpts = CAMPUSES.map((c) => ({ key: c, label: c }));
+    const campusOpts = CAMPUSES.map((c) => ({ key: c.id, label: c.short }));
     const areaOpts = AREAS.map((a) => ({ key: a, label: a }));
     const rentOpts = RENTS.map((r) => ({ key: r.label, label: r.label }));
     const typeOpts = Object.keys(roomTypeLabel).map((k) => ({ key: k, label: roomTypeLabel[k] }));
     return (<>
       <div className={cn("mx-auto hidden w-full max-w-[920px] items-center rounded-2xl border border-bebe bg-card p-1.5 shadow-search md:flex", compact && "max-w-[720px]")}>
-        <Field label="Campus" placeholder="Any campus" value={v.near} options={campusOpts} onPick={(k) => setV({ ...v, near: k })}/>
+        <Field label="Campus" placeholder="Any campus" value={campusShort(v.near)} options={campusOpts} onPick={(k) => setV({ ...v, near: k })}/>
         <span className="h-8 w-px bg-bebe"/>
         <Field label="Where" placeholder="Search areas" value={v.area} options={areaOpts} onPick={(k) => setV({ ...v, area: k })}/>
         <span className="h-8 w-px bg-bebe"/>

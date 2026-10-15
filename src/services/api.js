@@ -67,8 +67,8 @@ const withCaretaker = (r) => ({
     caretaker: resolveCaretaker(caretakers.find((c) => c.id === r.caretakerId)),
 });
 export function minutesTo(r, campus) {
-    const d = r.distances[campus];
-    return d.walkMin ?? d.matatuMin ?? 999;
+    const d = r.distances?.[campus];
+    return d?.walkMin ?? d?.matatuMin ?? 999;
 }
 export async function getRooms(filters = {}) {
     await delay();
