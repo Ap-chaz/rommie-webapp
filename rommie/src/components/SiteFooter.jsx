@@ -152,7 +152,7 @@ export function SiteFooter() {
       {/* Bottom bar */}
       <div className="border-t border-bebe">
         <div className="page-container flex flex-col gap-3 py-6 text-sm text-foggy md:flex-row md:items-center md:justify-between">
-          <p>© {new Date().getFullYear()} Rommie. Made for students in Nairobi and Kajiado, Kenya.</p>
+          <p>© {new Date().getFullYear()} Rommie. Made for students</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <Link to="/privacy" className="hover:text-hof hover:underline">Privacy</Link>
             <Link to="/terms" className="hover:text-hof hover:underline">Terms</Link>

@@ -18,7 +18,7 @@ export function ReportModal({ roomId, open, onOpenChange }) {
     };
     const submit = async () => {
         if (!reason)
-            return;
+            return; 
         setState("loading");
         await submitReport(roomId, reason, note || undefined);
         setState("done");
