@@ -1,5 +1,7 @@
 /**
- * Private hostels near JKUAT Karen, transcribed from the JKUAT Karen Dean of Students "Private Hostels Guide 2025".
+ * Private hostels in the Karen area, transcribed from the Karen Campus Dean of Students "Private Hostels Guide 2025".
+ * The guide serves students of all the nearby schools, not one campus. Where it names a campus we keep it in `nearCampus`;
+ * otherwise the distance is simply "to campus" as printed.
  * Prices and contacts are as printed there. Confirm with the hostel before paying: terms change each semester.
  * Not yet entered: Blue Plantinum's Homes (prices unclear on the scan) and Qejani's "superior double" rate.
  */
@@ -18,8 +20,8 @@ export const hostelSeeds = [
     { id: "h9", title: "Banaki Hostel", gender: "Ladies", capacity: 48, phone: "0720773363", km: 2, transport: true, meals: "available", options: [m("Monthly", 13000), sem("Per semester", 52000)] },
     { id: "h10", title: "Campus Lane", gender: "Ladies", capacity: 50, phone: "0722527293", km: 1, transport: true, meals: "available", options: [sem("Per semester", 52000), m("Monthly", 12000, 20000)] },
     { id: "h11", title: "Stanjo Hostels", gender: "Mixed", capacity: 50, phone: "0711308207", km: 0.8, transport: false, meals: "none", options: [m("Standard", 15000), m("Mid", 20000), m("Premium", 25000)] },
-    { id: "h12", title: "St. Francis Ladies Hostel", gender: "Ladies", capacity: 80, phone: "0712739345", distance: "Near the JKUAT Karen campus gate", transport: false, meals: "none", options: [m("Single (ensuite)", 15000, 19000), sem("Single, per semester", 60000, 75000), m("Sharing (ensuite)", 10000, 12500), sem("Sharing, per semester", 40000, 50000)] },
-    { id: "h13", title: "Buon Villa Hostels", gender: "Mixed", capacity: 88, phone: "0722703464", distance: "500 m walk from Co-operative University", transport: false, meals: "available", options: [m("4 sharing", 10000), m("3 sharing", 10500)], notes: "Electricity not included in the rent." },
+    { id: "h12", title: "St. Francis Ladies Hostel", gender: "Ladies", capacity: 80, phone: "0712739345", distance: "Near the JKUAT Karen campus gate", nearCampus: "JKUAT", transport: false, meals: "none", options: [m("Single (ensuite)", 15000, 19000), sem("Single, per semester", 60000, 75000), m("Sharing (ensuite)", 10000, 12500), sem("Sharing, per semester", 40000, 50000)] },
+    { id: "h13", title: "Buon Villa Hostels", gender: "Mixed", capacity: 88, phone: "0722703464", distance: "500 m walk from Co-operative University", nearCampus: "Co-op", transport: false, meals: "available", options: [m("4 sharing", 10000), m("3 sharing", 10500)], notes: "Electricity not included in the rent." },
     { id: "h14", title: "Qejani Student Residences", gender: "Mixed", capacity: 800, phone: "0800733533", km: 0.8, transport: false, meals: "none", options: [m("Quadruple", 12500), m("Double", 15500)], notes: "No meals: cook for yourself or buy from their cafeteria. Superior double rate to be confirmed." },
     { id: "h15", title: "Charles Heery Hostels", capacity: 120, phone: "0757527814", km: 0.2, transport: false, meals: "none", options: [m("Single", 12000), m("Sharing", 14500), m("Executive", 19500)] },
     { id: "h16", title: "Timpheys Hostel", gender: "Mixed", capacity: 75, phone: "0769733329", distance: "6 km, Rongai", transport: false, meals: "available", options: [m("4-6 sharing", 5000)] },

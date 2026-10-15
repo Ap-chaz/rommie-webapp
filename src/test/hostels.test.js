@@ -3,10 +3,10 @@ import { getRooms } from "@/services/api";
 import { hostelSeeds } from "@/data/hostels";
 
 describe("hostel listings", () => {
-    it("lists the hostels from the JKUAT guide", async () => {
+    it("lists the hostels from the Karen guide", async () => {
         const list = await getRooms({ roomType: "hostel", vacantOnly: false });
         expect(list).toHaveLength(hostelSeeds.length);
-        expect(list.every((r) => r.roomOptions.length > 0 && r.jkuatListed)).toBe(true);
+        expect(list.every((r) => r.roomOptions.length > 0 && r.inGuide)).toBe(true);
     });
     it("hides gents-only hostels from the ladies filter", async () => {
         const list = await getRooms({ roomType: "hostel", gender: "Ladies", vacantOnly: false });
@@ -18,9 +18,15 @@ describe("hostel listings", () => {
         expect(list.length).toBeGreaterThan(0);
         expect(list.every((r) => r.meals === "available" && r.transport)).toBe(true);
     });
-    it("keeps hostels when searching near JKUAT", async () => {
-        const list = await getRooms({ near: "JKUAT", roomType: "hostel", vacantOnly: false });
-        expect(list.length).toBe(hostelSeeds.length);
+    it("keeps hostels with no named campus when searching near any campus", async () => {
+        const list = await getRooms({ near: "CUEA", roomType: "hostel", vacantOnly: false });
+        expect(list.some((r) => r.title === "Elite Hostel")).toBe(true);
+    });
+    it("only shows a hostel that names a campus for that campus", async () => {
+        const jkuat = await getRooms({ near: "JKUAT", roomType: "hostel", vacantOnly: false });
+        const coop = await getRooms({ near: "Co-op", roomType: "hostel", vacantOnly: false });
+        expect(jkuat.some((r) => r.title === "Buon Villa Hostels")).toBe(false);
+        expect(coop.some((r) => r.title === "Buon Villa Hostels")).toBe(true);
     });
     it("shows the cheapest monthly price as the headline rent", async () => {
         const list = await getRooms({ roomType: "hostel", vacantOnly: false });
