@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, SelectInput, TextInput } from "@/components/forms/Field";
 import { controlClass } from "@/components/forms/Field";
 import { MIN_PHOTOS, PhotoUploader } from "@/components/caretaker/PhotoUploader";
-import { AMENITY_OPTIONS, amenityFormLabel, AREAS, CAMPUSES, normalizeKenyanPhone, roomTypeLabel } from "@/lib/format";
+import { AMENITY_OPTIONS, amenityFormLabel, AREAS, CAMPUSES, cheapestMonthly, GENDERS, normalizeKenyanPhone, roomTypeLabel } from "@/lib/format";
 import { phoneField } from "@/lib/validation";
 import { cn } from "@/lib/utils";
 const minutes = z.string().trim().refine((v) => v === "" || /^\d{1,3}$/.test(v), "Use whole minutes, like 10.");
@@ -16,22 +16,61 @@ const wholeKes = (what, allowZero = false) => z.string().trim().min(1, `Enter ${
     .refine((v) => { const n = toNum(v); return allowZero ? n >= 0 : n > 0; }, "Must be more than 0.")
     .refine((v) => toNum(v) <= 500000, "That looks too high. Check the amount.");
 const toNum = (v) => Number(v.replace(/,/g, ""));
+const optionSchema = z.object({
+    label: z.string().trim().max(40, "Keep the name under 40 characters."),
+    rent: z.string().trim(),
+    maxRent: z.string().trim(),
+    billing: z.enum(["month", "semester"]),
+});
+const kes = (v) => /^\d{1,3}(,?\d{3})*$|^\d+$/.test(v) && toNum(v) > 0 && toNum(v) <= 500000;
 const schema = z
     .object({
     roomType: z.string().refine((v) => v in roomTypeLabel, "Choose a room type."),
     area: z.string().refine((v) => AREAS.includes(v), "Choose an area."),
     title: z.string().trim().min(5, "Add a short title, like “Bedsitter near KSL Gate 2”.").max(80, "Keep the title under 80 characters."),
     description: z.string().trim().max(600, "Keep the description under 600 characters."),
-    rent: wholeKes("the monthly rent"),
+    rent: z.string().trim(),
     depositTerms: z.string().trim().min(2, "Describe the deposit, or write “No deposit”.").max(120, "Keep this under 120 characters."),
     amenities: z.array(z.string()),
     ...Object.fromEntries(CAMPUSES.flatMap((c) => [[`${c.key}Walk`, minutes], [`${c.key}Matatu`, minutes]])),
-    matatuFare: wholeKes("the matatu fare", true),
+    matatuFare: z.string().trim(),
+    gender: z.string(),
+    meals: z.boolean(),
+    transport: z.boolean(),
+    distanceKm: z.string().trim(),
+    registrationFee: z.string().trim(),
+    roomOptions: z.array(optionSchema),
     mapLink: z.string().trim().refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Paste a full link starting with https://"),
     whatsapp: phoneField,
     call: phoneField,
 })
     .superRefine((v, ctx) => {
+    const issue = (path, message) => ctx.addIssue({ code: "custom", path, message });
+    if (v.roomType === "hostel") {
+        if (!GENDERS.includes(v.gender) && v.gender !== "Mixed")
+            issue(["gender"], "Say who the hostel is for.");
+        if (v.distanceKm !== "" && !(Number(v.distanceKm) >= 0 && Number(v.distanceKm) <= 50))
+            issue(["distanceKm"], "Enter the distance in km, like 1.5.");
+        if (v.registrationFee !== "" && !kes(v.registrationFee))
+            issue(["registrationFee"], "Use whole numbers only, like 3000.");
+        if (v.roomOptions.length === 0)
+            issue(["roomOptions"], "Add at least one room option with a price.");
+        v.roomOptions.forEach((o, i) => {
+            if (o.label === "")
+                issue(["roomOptions", i, "label"], "Name this option, like “Single” or “4 sharing”.");
+            if (!kes(o.rent))
+                issue(["roomOptions", i, "rent"], "Enter a price in whole shillings.");
+            if (o.maxRent !== "" && (!kes(o.maxRent) || toNum(o.maxRent) <= toNum(o.rent)))
+                issue(["roomOptions", i, "maxRent"], "The top of the range must be more than the price.");
+        });
+        return;
+    }
+    const rent = wholeKes("the monthly rent").safeParse(v.rent);
+    if (!rent.success)
+        issue(["rent"], rent.error.issues[0].message);
+    const fare = wholeKes("the matatu fare", true).safeParse(v.matatuFare);
+    if (!fare.success)
+        issue(["matatuFare"], fare.error.issues[0].message);
     if (!CAMPUSES.some((c) => v[`${c.key}Walk`] !== "" || v[`${c.key}Matatu`] !== "")) {
         ctx.addIssue({ code: "custom", path: [`${CAMPUSES[0].key}Walk`], message: "Add at least one walking or matatu time to a campus." });
     }
@@ -62,12 +101,20 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
                 [`${c.key}Matatu`, d?.[c.id]?.matatuMin?.toString() ?? ""],
             ])),
             matatuFare: initial ? String(initial.matatuFareKes) : "",
+            gender: initial?.gender ?? "",
+            meals: initial?.meals === "available",
+            transport: !!initial?.transport,
+            distanceKm: initial?.distanceLabel?.match(/^([\d.]+) km/)?.[1] ?? "",
+            registrationFee: initial?.registrationFeeKes ? String(initial.registrationFeeKes) : "",
+            roomOptions: (initial?.roomOptions ?? []).map((o) => ({ label: o.label, rent: String(o.rentKes), maxRent: o.maxKes ? String(o.maxKes) : "", billing: o.billing })),
             mapLink: initial?.mapLink ?? "",
             whatsapp: initial?.whatsappNumber ?? accountPhone,
             call: initial?.callNumber ?? accountPhone,
         },
     });
     const { errors, isSubmitting } = f.formState;
+    const options = useFieldArray({ control: f.control, name: "roomOptions" });
+    const isHostel = f.watch("roomType") === "hostel";
     const [photos, setPhotos] = useState(() => toItems(initial?.photos ?? []));
     const [triedSubmit, setTriedSubmit] = useState(false);
     const done = photos.filter((p) => p.status === "done");
@@ -84,14 +131,21 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
             return;
         const area = v.area;
         const roomType = v.roomType;
-        const distances = Object.fromEntries(CAMPUSES.map((c) => [c.id, { walkMin: num(v[`${c.key}Walk`]), matatuMin: num(v[`${c.key}Matatu`]) }]));
+        const distances = isHostel ? {} : Object.fromEntries(CAMPUSES.map((c) => [c.id, { walkMin: num(v[`${c.key}Walk`]), matatuMin: num(v[`${c.key}Matatu`]) }]));
+        const roomOptions = isHostel ? v.roomOptions.map((o) => ({ label: o.label, rentKes: toNum(o.rent), ...(o.maxRent ? { maxKes: toNum(o.maxRent) } : {}), billing: o.billing })) : undefined;
+        const hostelFields = isHostel ? {
+            roomOptions, gender: v.gender, meals: v.meals ? "available" : "none", transport: v.transport,
+            distanceLabel: v.distanceKm !== "" ? `${Number(v.distanceKm)} km to JKUAT Karen` : undefined,
+            registrationFeeKes: v.registrationFee ? toNum(v.registrationFee) : undefined,
+        } : {};
         try {
             await onSubmit({
                 title: v.title, roomType, area,
                 description: v.description || `${roomTypeLabel[roomType]} in ${area}.`,
-                rentKes: toNum(v.rent), depositTerms: v.depositTerms,
+                ...hostelFields,
+                rentKes: isHostel ? cheapestMonthly(roomOptions) : toNum(v.rent), depositTerms: v.depositTerms,
                 amenities: v.amenities,
-                distances, matatuFareKes: toNum(v.matatuFare),
+                distances, matatuFareKes: isHostel ? 0 : toNum(v.matatuFare),
                 photos: done.map((p) => p.url),
                 mapLink: v.mapLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(area + ", Nairobi")}`,
                 whatsappNumber: normalizeKenyanPhone(v.whatsapp), callNumber: normalizeKenyanPhone(v.call),
@@ -133,7 +187,61 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
         </Field>
       </Section>
 
-      <Section title="Price">
+      {isHostel && (<Section title="Hostel details" hint="Students filter hostels by these, so fill them in accurately.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Who is it for?" error={errors.gender?.message} required>
+              {(p) => (<SelectInput {...p} {...f.register("gender")}>
+                  <option value="">Choose one</option>
+                  <option value="Ladies">Ladies only</option>
+                  <option value="Gents">Gents only</option>
+                  <option value="Mixed">Ladies and gents</option>
+                </SelectInput>)}
+            </Field>
+            <Field label="Distance to JKUAT Karen (km)" optional error={errors.distanceKm?.message}>
+              {(p) => <TextInput {...p} inputMode="decimal" placeholder="1.5" {...f.register("distanceKm")}/>}
+            </Field>
+            <Field label="Registration fee (KES)" optional error={errors.registrationFee?.message} hint="One-off, non-refundable.">
+              {(p) => <TextInput {...p} inputMode="numeric" placeholder="3000" {...f.register("registrationFee")}/>}
+            </Field>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Services">
+            <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[8px] border border-deco px-3 hover:bg-faint">
+              <input type="checkbox" className="h-5 w-5 accent-hof" {...f.register("meals")}/> Meals available
+            </label>
+            <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[8px] border border-deco px-3 hover:bg-faint">
+              <input type="checkbox" className="h-5 w-5 accent-hof" {...f.register("transport")}/> Transport to campus
+            </label>
+          </div>
+        </Section>)}
+
+      {isHostel ? (<Section title="Room options & prices" hint="One row per choice a student can book, like Single, 4 sharing or Ensuite. Quote per month or per semester, as you charge it.">
+          {options.fields.map((field, i) => (<fieldset key={field.id} className="space-y-3 rounded-[8px] border border-deco p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Option name" error={errors.roomOptions?.[i]?.label?.message} required>
+                  {(p) => <TextInput {...p} placeholder="Single (ensuite)" {...f.register(`roomOptions.${i}.label`)}/>}
+                </Field>
+                <Field label="Charged" required>
+                  {(p) => (<SelectInput {...p} {...f.register(`roomOptions.${i}.billing`)}>
+                      <option value="month">Per month</option>
+                      <option value="semester">Per semester</option>
+                    </SelectInput>)}
+                </Field>
+                <Field label="Price (KES)" error={errors.roomOptions?.[i]?.rent?.message} required>
+                  {(p) => <TextInput {...p} inputMode="numeric" placeholder="15000" {...f.register(`roomOptions.${i}.rent`)}/>}
+                </Field>
+                <Field label="Up to (KES)" optional error={errors.roomOptions?.[i]?.maxRent?.message} hint="Only if the price is a range.">
+                  {(p) => <TextInput {...p} inputMode="numeric" placeholder="19000" {...f.register(`roomOptions.${i}.maxRent`)}/>}
+                </Field>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => options.remove(i)}><Trash2 /> Remove option</Button>
+            </fieldset>))}
+          {typeof errors.roomOptions?.message === "string" && <p role="alert" className="text-sm font-medium">{errors.roomOptions.message}</p>}
+          {errors.roomOptions?.root?.message && <p role="alert" className="text-sm font-medium">{errors.roomOptions.root.message}</p>}
+          <Button type="button" variant="outline" onClick={() => options.append({ label: "", rent: "", maxRent: "", billing: "month" })}><Plus /> Add a room option</Button>
+          <Field label="Deposit terms" error={errors.depositTerms?.message} required>
+            {(p) => <TextInput {...p} placeholder="One month deposit, or “Ask the hostel”" {...f.register("depositTerms")}/>}
+          </Field>
+        </Section>) : (<Section title="Price">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Rent per month (KES)" error={errors.rent?.message} required>
             {(p) => <TextInput {...p} inputMode="numeric" placeholder="8500" {...f.register("rent")}/>}
@@ -142,7 +250,7 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
             {(p) => <TextInput {...p} placeholder="One month deposit" {...f.register("depositTerms")}/>}
           </Field>
         </div>
-      </Section>
+      </Section>)}
 
       <Section title="What's included">
         <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Amenities">
@@ -153,7 +261,7 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
         </div>
       </Section>
 
-      <Section title="Getting to campus" hint="Fill in what applies. At least one time is needed.">
+      {!isHostel && (<Section title="Getting to campus" hint="Fill in what applies. At least one time is needed.">
         {CAMPUSES.map((c) => {
             return (<fieldset key={c.id}>
               <legend className="mb-2 font-medium">{c.name}</legend>
@@ -170,7 +278,12 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
         <Field label="Map link" optional error={errors.mapLink?.message} hint="Paste a Google Maps link to the exact spot. We'll use the area if you skip it.">
           {(p) => <TextInput {...p} type="url" inputMode="url" placeholder="https://maps.google.com/…" {...f.register("mapLink")}/>}
         </Field>
-      </Section>
+      </Section>)}
+      {isHostel && (<Section title="Location">
+          <Field label="Map link" optional error={errors.mapLink?.message} hint="Paste a Google Maps link to the exact spot.">
+            {(p) => <TextInput {...p} type="url" inputMode="url" placeholder="https://maps.google.com/…" {...f.register("mapLink")}/>}
+          </Field>
+        </Section>)}
 
       <Section title="Photos" hint={`Add at least ${MIN_PHOTOS} bright, clear photos of the room, the bathroom and the compound.`}>
         <PhotoUploader items={photos} setItems={setPhotos} error={photoError}/>

@@ -8,7 +8,7 @@ import { SearchCapsule } from "@/components/SearchCapsule";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { AREAS, CAMPUS_IDS, roomTypeLabel } from "@/lib/format";
+import { AREAS, CAMPUS_IDS, GENDERS, roomTypeLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useAuthGate } from "@/lib/auth";
 const AMENITIES = ["Water 24/7", "WiFi", "Tokens", "Gated Security"];
@@ -21,6 +21,9 @@ const validateSearch = (s) => ({
     maxRent: num(s["maxRent"]),
     near: CAMPUS_IDS.includes(s["near"]) ? s["near"] : undefined,
     amenities: Array.isArray(s["amenities"]) ? s["amenities"].filter((a) => AMENITIES.includes(a)) : undefined,
+    gender: GENDERS.includes(s["gender"]) ? s["gender"] : undefined,
+    mealsOnly: s["mealsOnly"] === true || s["mealsOnly"] === "true" ? true : undefined,
+    transportOnly: s["transportOnly"] === true || s["transportOnly"] === "true" ? true : undefined,
     vacantOnly: s["vacantOnly"] === false || s["vacantOnly"] === "false" ? false : undefined,
     sort: ["newest", "rent_asc", "rent_desc"].includes(s["sort"]) ? s["sort"] : undefined,
 });
@@ -60,6 +63,14 @@ function Filters({ f, set }) {
             const on = f.amenities?.includes(a);
             return (<Chip key={a} on={!!on} onClick={() => set({ amenities: on ? f.amenities.filter((x) => x !== a) : [...(f.amenities ?? []), a] })}>{a}</Chip>);
         })}
+        </div>
+      </section>
+      <section>
+        <h3 className="mb-3 text-base font-medium">Hostels</h3>
+        <div className="flex flex-wrap gap-2">
+          {GENDERS.map((g) => (<Chip key={g} on={f.gender === g} onClick={() => set({ gender: f.gender === g ? undefined : g })}>{g}</Chip>))}
+          <Chip on={!!f.mealsOnly} onClick={() => set({ mealsOnly: f.mealsOnly ? undefined : true })}>Meals available</Chip>
+          <Chip on={!!f.transportOnly} onClick={() => set({ transportOnly: f.transportOnly ? undefined : true })}>Transport to campus</Chip>
         </div>
       </section>
       <label className="flex items-center justify-between border-t border-bebe pt-5">

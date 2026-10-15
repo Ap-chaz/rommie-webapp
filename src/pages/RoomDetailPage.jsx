@@ -11,7 +11,7 @@ import { ReportModal } from "@/components/ReportModal";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { campusShort, daysAgoLabel, formatKes, roomTypeLabel, whatsappLink } from "@/lib/format";
+import { campusShort, daysAgoLabel, formatKes, optionPrice, roomTypeLabel, whatsappLink } from "@/lib/format";
 const roomQuery = (id) => queryOptions({ queryKey: ["room", id], queryFn: () => getRoom(id) });
 const amenityIcon = { "Water 24/7": Droplets, WiFi: Wifi, Tokens: Zap, "Gated Security": ShieldCheck };
 const amenityLabel = { "Water 24/7": "Water 24/7", WiFi: "WiFi Available", Tokens: "Tokens (prepaid power)", "Gated Security": "Gated Security" };
@@ -163,10 +163,29 @@ export default function RoomDetailPage() {
             <p className="mt-4 break-words">{room.description}</p>
           </section>
 
+          {room.roomOptions?.length > 0 && (<section className="py-6">
+              <h2 className="text-section mb-4">Room options & prices</h2>
+              <ul className="divide-y divide-bebe rounded-xl border border-bebe">
+                {room.roomOptions.map((o) => (<li key={o.label} className="flex items-center justify-between gap-4 px-4 py-3">
+                    <span>{o.label}</span>
+                    <span className="font-semibold">{optionPrice(o)}</span>
+                  </li>))}
+              </ul>
+              <dl className="mt-4 grid grid-cols-2 gap-4">
+                <div><dt className="text-foggy">Who can stay</dt><dd>{room.gender === "Mixed" ? "Ladies and gents" : room.gender ?? "Ask the hostel"}</dd></div>
+                <div><dt className="text-foggy">Meals</dt><dd>{room.meals === "available" ? "Available" : "Not provided"}</dd></div>
+                <div><dt className="text-foggy">Transport to campus</dt><dd>{room.transport ? "Available" : "Not provided"}</dd></div>
+                {room.registrationFeeKes ? <div><dt className="text-foggy">Registration fee</dt><dd>{formatKes(room.registrationFeeKes)} (non-refundable)</dd></div> : null}
+              </dl>
+              {room.notes && <p className="mt-3 text-foggy">{room.notes}</p>}
+              {room.jkuatListed && <p className="mt-3 flex items-center gap-1.5 text-sm font-medium"><ShieldCheck className="h-4 w-4"/> Listed in the JKUAT Karen Dean of Students hostels guide (2025)</p>}
+              <p className="mt-3 text-sm text-foggy">Get a signed agreement that states the rent, services and deposit before you pay.</p>
+            </section>)}
+
           <section className="py-6">
             <h2 className="text-section mb-4">Rent & terms</h2>
             <dl className="grid grid-cols-2 gap-4">
-              <div><dt className="text-foggy">Rent</dt><dd className="font-semibold">{formatKes(room.rentKes)} /month</dd></div>
+              <div><dt className="text-foggy">Rent</dt><dd className="font-semibold">{room.roomOptions?.length > 1 ? "From " : ""}{formatKes(room.rentKes)} /month</dd></div>
               <div><dt className="text-foggy">Deposit</dt><dd>{room.depositTerms}</dd></div>
               <div><dt className="text-foggy">Area</dt><dd>{room.area}</dd></div>
               <div><dt className="text-foggy">Room type</dt><dd>{roomTypeLabel[room.roomType]}</dd></div>
@@ -176,11 +195,12 @@ export default function RoomDetailPage() {
           <section className="py-6">
             <h2 className="text-section mb-4">Getting to campus</h2>
             <ul className="space-y-3">
+              {room.distanceLabel && <li className="flex items-center gap-3"><Footprints className="h-5 w-5" strokeWidth={1.5}/> {room.distanceLabel}</li>}
               {Object.entries(room.distances).filter(([, d]) => d?.walkMin || d?.matatuMin).map(([c, d]) => (<li key={c} className="flex items-center gap-3">
                   {d.walkMin ? <Footprints className="h-5 w-5" strokeWidth={1.5}/> : <Bus className="h-5 w-5" strokeWidth={1.5}/>}
                   {d.walkMin ? `${d.walkMin} mins walk to ${campusShort(c)}` : `${d.matatuMin} mins matatu to ${campusShort(c)}`}
                 </li>))}
-              <li className="text-foggy">Matatu fare to campus: about {formatKes(room.matatuFareKes)}</li>
+              {room.matatuFareKes > 0 && <li className="text-foggy">Matatu fare to campus: about {formatKes(room.matatuFareKes)}</li>}
             </ul>
             <a href={room.mapLink} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 font-medium underline"><MapPin className="h-4 w-4"/> Open in Google Maps</a>
           </section>

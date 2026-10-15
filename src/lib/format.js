@@ -3,7 +3,24 @@ export const roomTypeLabel = {
     bedsitter: "Bedsitter",
     single_room: "Single Room",
     one_bedroom: "One Bedroom",
+    hostel: "Hostel",
 };
+export const GENDERS = ["Ladies", "Gents"];
+/** Months in a university semester, used to turn a per-semester hostel price into a monthly figure. */
+export const SEMESTER_MONTHS = 4;
+/** Monthly equivalent of a room option's price (low end), rounded to the nearest 10 shillings. */
+export function monthlyKes(o) {
+    return o.billing === "semester" ? Math.round(o.rentKes / SEMESTER_MONTHS / 10) * 10 : o.rentKes;
+}
+/** "KES 15,000" or "KES 15,000 - 19,000" per month or semester. */
+export function optionPrice(o) {
+    const range = o.maxKes ? `${formatKes(o.rentKes)} - ${o.maxKes.toLocaleString("en-KE")}` : formatKes(o.rentKes);
+    return `${range} / ${o.billing === "semester" ? "semester" : "month"}`;
+}
+/** Cheapest monthly figure across a hostel's options; used as the listing's headline rent. */
+export const cheapestMonthly = (options) => Math.min(...options.map(monthlyKes));
+/** Whether a listing passes a gender filter. Open rentals (no gender set) and mixed hostels always pass. */
+export const genderMatches = (r, g) => !g || !r.gender || r.gender === "Mixed" || r.gender === g;
 export const AREAS = ["Gataka", "Rongai", "Maasai Lodge", "Karen"];
 /**
  * The five campuses Rommie serves. This is the single source of truth: search, filters, the zones page,
@@ -28,6 +45,8 @@ export function daysAgoLabel(days) {
 }
 /** Closest campus as a short phrase, e.g. "10 min walk to KSL". */
 export function nearestCampus(r) {
+    if (r.distanceLabel)
+        return r.distanceLabel;
     const best = Object.entries(r.distances ?? {})
         .map(([c, d]) => ({ c, min: d?.walkMin ?? d?.matatuMin ?? 999, walk: d?.walkMin != null }))
         .sort((a, b) => a.min - b.min)[0];
