@@ -2,7 +2,7 @@ import { Link } from "@/lib/router";
 import { ArrowUp, Clock, Mail, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
 import { Logo } from "./Logo";
 import { SocialIcons } from "./SocialIcons";
-import { AREAS } from "@/lib/format";
+import { AREAS, CAMPUSES } from "@/lib/format";
 import { CONTACT, SOCIALS, SUPPORT_EMAIL } from "@/lib/site";
 import { useAuth, useLogout } from "@/lib/auth";
 const linkClass = "inline-flex min-h-8 items-center text-sm text-foggy hover:text-hof hover:underline";
@@ -141,9 +141,9 @@ export function SiteFooter() {
                 {a}
               </Link>
             </li>))}
-          {["KSL", "CUEA", "Co-op"].map((c) => (<li key={c}>
-              <Link to="/rooms" search={{ near: c }} className="inline-flex min-h-9 items-center rounded-full border border-deco bg-card px-4 text-sm hover:border-hof">
-                Near {c}
+          {CAMPUSES.map((c) => (<li key={c.id}>
+              <Link to="/rooms" search={{ near: c.id }} className="inline-flex min-h-9 items-center rounded-full border border-deco bg-card px-4 text-sm hover:border-hof">
+                Near {c.short}
               </Link>
             </li>))}
         </ul>

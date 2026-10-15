@@ -3,14 +3,15 @@ import { useRef } from "react";
 import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { BadgeCheck, ChevronLeft, ChevronRight, Clock, GraduationCap, Mountain, MapPin, MessageCircle, ShieldCheck, Trees, Building, Landmark, Tent } from "lucide-react";
-import { getRooms, daysSince } from "@/services/api";
+import { getRooms, daysSince, minutesTo } from "@/services/api";
+import { CAMPUSES } from "@/lib/format";
 import { SearchCapsule } from "@/components/SearchCapsule";
 import { RoomCard, RoomCardSkeleton } from "@/components/RoomCard";
 const PAGE_META = [
-            { title: "Rommie · Vacant student rooms near CUEA, KSL & Co-op" },
-            { name: "description", content: "Find cheap, currently vacant rooms near CUEA, KSL and Co-operative University. Contact the caretaker directly on WhatsApp or call." },
+            { title: "Rommie · Vacant student rooms near CUEA, KSL, JKUAT Karen, Tangaza & Co-op" },
+            { name: "description", content: "Find cheap, currently vacant rooms near CUEA, KSL, JKUAT Karen, Tangaza and Co-operative University. Contact the caretaker directly on WhatsApp or call." },
             { property: "og:title", content: "Rommie · Vacant student rooms near campus" },
-            { property: "og:description", content: "Cheap, vacant rooms in Rongai, Gataka, Ngong, Karen and Maasai Lodge." },
+            { property: "og:description", content: "Cheap, vacant rooms in Rongai, Gataka, Karen and Maasai Lodge." },
         ];
 const categories = [
     { label: "Rongai", icon: Building, search: { area: "Rongai" } },
@@ -20,8 +21,7 @@ const categories = [
 ];
 const rows = [
     { title: "Vacant now in Rongai", search: { area: "Rongai" }, pick: (r) => r.filter((x) => x.area === "Rongai") },
-    { title: "Near KSL gate", search: { near: "KSL" }, pick: (r) => r.filter((x) => (x.distances.KSL.walkMin ?? 99) <= 15) },
-    { title: "Near CUEA", search: { near: "CUEA" }, pick: (r) => r.filter((x) => (x.distances.CUEA.walkMin ?? x.distances.CUEA.matatuMin ?? 99) <= 15) },
+    ...CAMPUSES.map((c) => ({ title: `Near ${c.short}`, search: { near: c.id }, pick: (r) => r.filter((x) => minutesTo(x, c.id) <= 15) })),
     { title: "Budget rooms under KES 6,000", search: { maxRent: 6000 }, pick: (r) => r.filter((x) => x.rentKes <= 6000) },
     { title: "Recently confirmed vacant", search: { sort: "newest" }, pick: (r) => r.filter((x) => daysSince(x.lastConfirmedVacantAt) <= 3) },
 ];
@@ -77,7 +77,7 @@ export default function Home() {
         {[
             { icon: BadgeCheck, t: "Verified student spaces" },
             { icon: Clock, t: "Fresh vacancies — every room shows when it was last confirmed" },
-            { icon: MapPin, t: "Distance to CUEA, KSL and Co-op gates" },
+            { icon: MapPin, t: "Distance to KSL, JKUAT Karen, Tangaza, CUEA and Co-op" },
             { icon: MessageCircle, t: "One-tap WhatsApp and Call to the caretaker" },
         ].map((x) => (<div key={x.t} className="flex items-start gap-3">
             <x.icon className="h-6 w-6 shrink-0" strokeWidth={1.5}/>

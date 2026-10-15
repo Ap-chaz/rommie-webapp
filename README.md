@@ -1,6 +1,7 @@
 # Rommie
 
-Find vacant student rooms near CUEA, KSL and Co-op University. Students browse, save and set alerts;
+Find vacant student rooms near KSL, JKUAT Karen Campus, Tangaza, CUEA and Co-operative University,
+in Rongai, Gataka, Karen and Maasai Lodge. Students browse, save and set alerts;
 caretakers post and keep listings fresh; admins verify identities and take stale listings down.
 
 React 19 + JavaScript, built with Vite, styled with Tailwind CSS v4, and ready to deploy on Vercel as a

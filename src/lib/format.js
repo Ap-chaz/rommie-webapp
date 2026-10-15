@@ -4,7 +4,21 @@ export const roomTypeLabel = {
     single_room: "Single Room",
     one_bedroom: "One Bedroom",
 };
-export const AREAS = ["Gataka", "Rongai", "Maasai Lodge", "Ngong", "Karen"];
+export const AREAS = ["Gataka", "Rongai", "Maasai Lodge", "Karen"];
+/**
+ * The five campuses Rommie serves. This is the single source of truth: search, filters, the zones page,
+ * the caretaker form and the footer all read from here. `key` is the prefix used for form field names.
+ */
+export const CAMPUSES = [
+    { id: "KSL", key: "ksl", short: "KSL", name: "Kenya School of Law" },
+    { id: "JKUAT", key: "jkuat", short: "JKUAT Karen", name: "JKUAT Karen Campus" },
+    { id: "Tangaza", key: "tangaza", short: "Tangaza", name: "Tangaza University" },
+    { id: "CUEA", key: "cuea", short: "CUEA", name: "Catholic University of Eastern Africa" },
+    { id: "Co-op", key: "coop", short: "Co-op", name: "Co-operative University of Kenya" },
+];
+export const CAMPUS_IDS = CAMPUSES.map((c) => c.id);
+/** Short display name for a campus id ("JKUAT" -> "JKUAT Karen"). Undefined stays undefined. */
+export const campusShort = (id) => CAMPUSES.find((c) => c.id === id)?.short ?? id;
 export function daysAgoLabel(days) {
     if (days <= 0)
         return "today";
@@ -14,11 +28,12 @@ export function daysAgoLabel(days) {
 }
 /** Closest campus as a short phrase, e.g. "10 min walk to KSL". */
 export function nearestCampus(r) {
-    const entries = Object.entries(r.distances);
-    const best = entries
-        .map(([c, d]) => ({ c, min: d.walkMin ?? d.matatuMin ?? 999, walk: d.walkMin != null }))
+    const best = Object.entries(r.distances ?? {})
+        .map(([c, d]) => ({ c, min: d?.walkMin ?? d?.matatuMin ?? 999, walk: d?.walkMin != null }))
         .sort((a, b) => a.min - b.min)[0];
-    return `${best.min} min ${best.walk ? "walk" : "matatu"} to ${best.c}`;
+    if (!best || best.min === 999)
+        return "";
+    return `${best.min} min ${best.walk ? "walk" : "matatu"} to ${campusShort(best.c)}`;
 }
 export function whatsappLink(r) {
     const msg = `Hi, I saw your ${roomTypeLabel[r.roomType].toLowerCase()} in ${r.area} at ${formatKes(r.rentKes)} on Rommie. Is it still vacant?`;

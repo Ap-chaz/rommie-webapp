@@ -4,20 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { RoomCard, RoomCardSkeleton } from "@/components/RoomCard";
 import { ErrorCard } from "@/components/StateCard";
-import { AREAS, formatKes } from "@/lib/format";
+import { AREAS, CAMPUSES, formatKes } from "@/lib/format";
 import { getRooms, minutesTo } from "@/services/api";
-const desc = "Vacant rooms grouped by distance to CUEA, KSL and Co-operative University.";
+const desc = "Vacant rooms grouped by distance to CUEA, KSL, JKUAT Karen, Tangaza and Co-op University.";
 const PAGE_META = [
             { title: "Campus Zones · Rommie" },
             { name: "description", content: desc },
             { property: "og:title", content: "Campus Zones · Rommie" },
             { property: "og:description", content: desc },
         ];
-const CAMPUSES = [
-    { id: "CUEA", short: "CUEA", name: "Catholic University of Eastern Africa" },
-    { id: "KSL", short: "KSL", name: "Kenya School of Law" },
-    { id: "Co-op", short: "Co-op", name: "Co-operative University of Kenya" },
-];
 export default function Zones() {
     usePageMeta(PAGE_META);
     return (<div className="page-container py-6 md:py-10">

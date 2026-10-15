@@ -4,7 +4,7 @@ import { BadgeCheck, Camera, Clock, MessageCircle, Smartphone } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import hero from "@/assets/room-2.jpg";
-const desc = "List your vacant rooms for free and reach students near CUEA, KSL and Co-operative University.";
+const desc = "List your vacant rooms for free and reach students near CUEA, KSL, JKUAT Karen, Tangaza and Co-op University.";
 const PAGE_META = [
             { title: "For Caretakers · Rommie" },
             { name: "description", content: desc },
@@ -28,7 +28,7 @@ export default function ForCaretakers() {
       <section className="grid items-center gap-8 md:grid-cols-2">
         <div>
           <h1 className="text-page">Fill your vacant rooms with students</h1>
-          <p className="mt-3 text-base text-foggy">List your rooms for free and reach students looking near CUEA, KSL and Co-operative University. They contact you directly.</p>
+          <p className="mt-3 text-base text-foggy">List your rooms for free and reach students looking near CUEA, KSL, JKUAT Karen, Tangaza and Co-operative University. They contact you directly.</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {isCaretaker ? (<Button asChild size="lg"><Link to="/caretaker/post">Post a room</Link></Button>) : (<>
                 <Button asChild size="lg"><Link to="/caretaker/signup">List your room</Link></Button>

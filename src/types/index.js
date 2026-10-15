@@ -3,10 +3,10 @@
  * Reference one from any file with  {import("@/types").Room}  inside a JSDoc comment.
  */
 
-/** @typedef {"Gataka" | "Rongai" | "Maasai Lodge" | "Ngong" | "Karen"} Area */
+/** @typedef {"Gataka" | "Rongai" | "Maasai Lodge" | "Karen"} Area */
 /** @typedef {"bedsitter" | "single_room" | "one_bedroom"} RoomType */
 /** @typedef {"Vacant" | "Taken"} RoomStatus */
-/** @typedef {"KSL" | "CUEA" | "Co-op"} Campus */
+/** @typedef {"KSL" | "JKUAT" | "Tangaza" | "CUEA" | "Co-op"} Campus */
 /** @typedef {"Water 24/7" | "WiFi" | "Tokens" | "Gated Security"} Amenity */
 
 /**
