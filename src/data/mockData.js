@@ -2,6 +2,8 @@ import r1 from "@/assets/room-1.jpg";
 import r2 from "@/assets/room-2.jpg";
 import r3 from "@/assets/room-3.jpg";
 import r4 from "@/assets/room-4.jpg";
+import { cheapestMonthly } from "@/lib/format";
+import { hostelSeeds } from "@/data/hostels";
 const daysAgo = (d) => new Date(Date.now() - d * 86400000).toISOString();
 const P = [r1, r2, r3, r4];
 const photos = (start) => [0, 1, 2, 3, 4].map((i) => P[(start + i) % 4]);
@@ -28,7 +30,39 @@ const seeds = [
     { id: "r13", title: "Single Room, Maasai Lodge Rd", description: "Neat single room, shared bathroom, borehole water.", roomType: "single_room", rentKes: 5500, depositTerms: "One month deposit (KES 5,500)", area: "Maasai Lodge", distances: { KSL: { matatuMin: 15 }, JKUAT: { matatuMin: 18 }, Tangaza: { matatuMin: 12 }, CUEA: { matatuMin: 10 }, "Co-op": { matatuMin: 30 } }, matatuFareKes: 50, amenities: ["Water 24/7", "Tokens"], status: "Vacant", caretakerId: "c1", confirmedDaysAgo: 7, photoStart: 1 },
     { id: "r14", title: "Bedsitter 5 min from KSL", description: "Walk to class. Bedsitter with fitted shelves and secure gate.", roomType: "bedsitter", rentKes: 9000, depositTerms: "One month deposit (KES 9,000)", area: "Karen", distances: { KSL: { walkMin: 5 }, JKUAT: { walkMin: 12 }, Tangaza: { matatuMin: 12 }, CUEA: { matatuMin: 15 }, "Co-op": { matatuMin: 25 } }, matatuFareKes: 40, amenities: ["Water 24/7", "WiFi", "Gated Security", "Tokens"], status: "Taken", caretakerId: "c1", confirmedDaysAgo: 2, photoStart: 3 },
 ];
-export const rooms = seeds.map(({ confirmedDaysAgo, photoStart, ...s }) => {
+const toKe = (n) => `+254${n.replace(/\D/g, "").replace(/^0/, "")}`;
+/** Hostel "caretakers" are the hostel's own contact, unverified until an admin approves them. */
+const hostelCaretakers = hostelSeeds.map((h) => ({ id: `hc-${h.id}`, name: h.title, phone: toKe(h.phone), verified: false, trustScore: 50, joinedAt: daysAgo(30) }));
+caretakers.push(...hostelCaretakers);
+const hostelRooms = hostelSeeds.map((h, i) => ({
+    id: h.id,
+    title: h.title,
+    description: `${h.gender === "Mixed" ? "Ladies and gents" : h.gender ?? "Student"} hostel${h.capacity ? ` with ${h.capacity} beds` : ""}. ${h.notes ?? ""}`.trim(),
+    roomType: "hostel",
+    rentKes: cheapestMonthly(h.options),
+    depositTerms: h.deposit ?? (h.regFee ? `KES ${h.regFee.toLocaleString("en-KE")} non-refundable fee` : "Ask the hostel"),
+    area: h.km === 6 ? "Rongai" : "Karen",
+    distances: {},
+    distanceLabel: h.km != null ? `${h.km < 1 ? h.km * 1000 + " m" : h.km + " km"} to JKUAT Karen` : h.distance,
+    matatuFareKes: 0,
+    amenities: [],
+    status: "Vacant",
+    caretakerId: `hc-${h.id}`,
+    gender: h.gender,
+    meals: h.meals,
+    transport: h.transport,
+    roomOptions: h.options,
+    registrationFeeKes: h.regFee,
+    jkuatListed: true,
+    notes: h.notes,
+    photos: photos(i),
+    mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.title + ", Karen, Nairobi")}`,
+    whatsappNumber: toKe(h.phone),
+    callNumber: toKe(h.phone),
+    lastConfirmedVacantAt: daysAgo(20),
+    createdAt: daysAgo(30),
+}));
+export const rooms = [...seeds.map(({ confirmedDaysAgo, photoStart, ...s }) => {
     const ct = caretakers.find((c) => c.id === s.caretakerId);
     return {
         ...s,
@@ -39,7 +73,7 @@ export const rooms = seeds.map(({ confirmedDaysAgo, photoStart, ...s }) => {
         lastConfirmedVacantAt: daysAgo(confirmedDaysAgo),
         createdAt: daysAgo(confirmedDaysAgo + 10),
     };
-});
+}), ...hostelRooms];
 export const accounts = [
     { id: "u1", name: "Amina Student", phone: "+254711111111", role: "student", phoneVerified: true, password: "password123" },
     { id: "c1", name: "Mama Wanjiru", phone: "+254712345678", role: "caretaker", phoneVerified: true, password: "password123" },

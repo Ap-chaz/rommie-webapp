@@ -4,7 +4,10 @@
  */
 
 /** @typedef {"Gataka" | "Rongai" | "Maasai Lodge" | "Karen"} Area */
-/** @typedef {"bedsitter" | "single_room" | "one_bedroom"} RoomType */
+/** @typedef {"bedsitter" | "single_room" | "one_bedroom" | "hostel"} RoomType */
+/** @typedef {"Ladies" | "Gents" | "Mixed"} Gender  "Mixed" means both ladies and gents are accepted. */
+/** @typedef {"none" | "available"} Meals */
+/** @typedef {"month" | "semester"} Billing */
 /** @typedef {"Vacant" | "Taken"} RoomStatus */
 /** @typedef {"KSL" | "JKUAT" | "Tangaza" | "CUEA" | "Co-op"} Campus */
 /** @typedef {"Water 24/7" | "WiFi" | "Tokens" | "Gated Security"} Amenity */
@@ -13,6 +16,15 @@
  * @typedef {object} CampusDistance
  * @property {number} [walkMin]
  * @property {number} [matatuMin]
+ */
+
+/**
+ * One bookable choice inside a hostel (single, 4 sharing, ensuite...). A normal rental has none.
+ * @typedef {object} RoomOption
+ * @property {string} label            e.g. "Single (ensuite)" or "4 sharing"
+ * @property {number} rentKes          Price, or the low end of a price range.
+ * @property {number} [maxKes]         High end when the hostel quotes a range.
+ * @property {Billing} billing         Hostels quote per month or per semester (about 4 months).
  */
 
 /**
@@ -35,6 +47,14 @@
  * @property {string} callNumber
  * @property {string} caretakerId
  * @property {string} createdAt  ISO date
+ * @property {Gender} [gender]               Hostels only. Leave empty for open rentals.
+ * @property {Meals} [meals]                 Hostels only.
+ * @property {boolean} [transport]           Hostels only: the hostel runs transport to campus.
+ * @property {string} [distanceLabel]        Hostels only, e.g. "2.5 km to JKUAT Karen".
+ * @property {RoomOption[]} [roomOptions]    Hostels only. rentKes is the cheapest option as a monthly figure.
+ * @property {number} [registrationFeeKes]   One-off non-refundable fee some hostels charge.
+ * @property {boolean} [jkuatListed]         Appears in the JKUAT Karen Dean of Students private hostels guide.
+ * @property {string} [notes]                Extra terms, e.g. "Electricity not included".
  * @property {boolean} [hidden]  Set by an admin to take a stale or reported listing off the public site.
  */
 
@@ -153,6 +173,9 @@
  * @property {RoomType} [roomType]
  * @property {Campus} [near]
  * @property {Amenity[]} [amenities]
+ * @property {Gender} [gender]
+ * @property {boolean} [mealsOnly]
+ * @property {boolean} [transportOnly]
  * @property {boolean} [vacantOnly]
  * @property {"newest" | "rent_asc" | "rent_desc"} [sort]
  */

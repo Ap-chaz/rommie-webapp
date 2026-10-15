@@ -3,7 +3,7 @@
  * Replace the mock bodies with real HTTP calls when the backend is ready.
  */
 import { accounts as seedAccounts, caretakers, rooms as seedRooms, seedReports, seedVerificationRequests } from "@/data/mockData";
-import { STALE_DAYS } from "@/lib/format";
+import { genderMatches, STALE_DAYS } from "@/lib/format";
 import { computeTrust } from "@/lib/trust";
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
 let rooms = [...seedRooms];
@@ -83,11 +83,17 @@ export async function getRooms(filters = {}) {
             return false;
         if (filters.maxRent && r.rentKes > filters.maxRent)
             return false;
+        if (!genderMatches(r, filters.gender))
+            return false;
+        if (filters.mealsOnly && r.meals !== "available")
+            return false;
+        if (filters.transportOnly && !r.transport)
+            return false;
         if (filters.vacantOnly && r.status !== "Vacant")
             return false;
         if (filters.amenities?.length && !filters.amenities.every((a) => r.amenities.includes(a)))
             return false;
-        if (filters.near && minutesTo(r, filters.near) > 20)
+        if (filters.near && !(r.jkuatListed && filters.near === "JKUAT") && minutesTo(r, filters.near) > 20)
             return false;
         return true;
     });

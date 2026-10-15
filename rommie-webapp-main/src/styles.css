@@ -1,0 +1,178 @@
+@import "tailwindcss";
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-rausch: var(--rausch);
+  --color-rausch-600: var(--rausch-600);
+  --color-hof: var(--hof);
+  --color-foggy: var(--foggy);
+  --color-grey-500: var(--grey-500);
+  --color-bebe: var(--bebe);
+  --color-deco: var(--deco);
+  --color-faint: var(--faint);
+  --color-vacant: var(--vacant);
+  --shadow-search: var(--shadow-search);
+  --shadow-dropdown: var(--shadow-dropdown);
+  --shadow-modal: var(--shadow-modal);
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+
+:root {
+  --radius: 0.75rem;
+  --rausch: oklch(0.553 0.174 38.4);
+  --rausch-600: oklch(0.470 0.143 37.3);
+  --hof: oklch(0.235 0 0);
+  --foggy: oklch(0.52 0 0);
+  --grey-500: oklch(0.82 0 0);
+  --bebe: oklch(0.94 0 0);
+  --deco: oklch(0.9 0 0);
+  --faint: oklch(0.975 0 0);
+  --vacant: oklch(0.65 0.15 150);
+  --background: var(--faint);
+  --foreground: var(--hof);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--hof);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--hof);
+  --primary: var(--hof);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: var(--faint);
+  --secondary-foreground: var(--hof);
+  --muted: var(--bebe);
+  --muted-foreground: var(--foggy);
+  --accent: var(--faint);
+  --accent-foreground: var(--hof);
+  --destructive: var(--rausch-600);
+  --destructive-foreground: oklch(1 0 0);
+  --border: var(--bebe);
+  --input: var(--deco);
+  --ring: var(--hof);
+  --chart-1: var(--hof); --chart-2: var(--foggy); --chart-3: var(--grey-500); --chart-4: var(--deco); --chart-5: var(--rausch);
+  --sidebar: oklch(1 0 0); --sidebar-foreground: var(--hof); --sidebar-primary: var(--hof); --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: var(--faint); --sidebar-accent-foreground: var(--hof); --sidebar-border: var(--bebe); --sidebar-ring: var(--hof);
+  --shadow-search: 0 0 0 1px rgb(0 0 0 / .02), 0 2px 6px rgb(0 0 0 / .04), 0 4px 8px rgb(0 0 0 / .1);
+  --shadow-dropdown: 0 6px 20px rgb(0 0 0 / .2);
+  --shadow-modal: 0 8px 28px rgb(0 0 0 / .28);
+}
+
+@layer base {
+  :root {
+    /* Height of the fixed top bar (excluding the notch inset). Phones < 768px, tablets/desktop >= 768px,
+       and a slimmer bar on landscape phones where vertical space is scarce. */
+    --header-h: 64px;
+  }
+  @media (width >= 768px) {
+    :root { --header-h: 80px; }
+  }
+  @media (max-height: 480px) and (orientation: landscape) and (width < 1024px) {
+    :root { --header-h: 56px; }
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 16px);
+  }
+
+  /* Long user-entered titles / names must wrap instead of pushing the page sideways. */
+  h1, h2, h3 { overflow-wrap: break-word; }
+
+  /* Removes the double-tap-to-zoom delay on touch controls. */
+  a, button, [role="button"], input, select, textarea, label { touch-action: manipulation; }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.43;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+  }
+}
+
+@utility page-container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1440px;
+  /* max() keeps content clear of the notch / rounded corners on landscape phones. */
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  @media (width >= 768px) {
+    padding-left: max(40px, env(safe-area-inset-left));
+    padding-right: max(40px, env(safe-area-inset-right));
+  }
+}
+@utility text-section {
+  font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.18;
+}
+@utility text-page {
+  font-size: 28px; font-weight: 700; line-height: 1.2;
+}
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}

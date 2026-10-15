@@ -61,19 +61,24 @@ export function RoomCard({ room }) {
               <span className="sr-only @min-[14rem]:hidden">Verified</span>
             </span>) : <span />}
           <span className="shrink-0 whitespace-nowrap rounded-md bg-hof/90 px-2 py-1 text-xs font-semibold text-primary-foreground">
-            {formatKes(room.rentKes)}<span className="hidden font-normal @min-[14rem]:inline">/mo</span>
+            {room.roomOptions?.length > 1 && "From "}{formatKes(room.rentKes)}<span className="hidden font-normal @min-[14rem]:inline">/mo</span>
           </span>
         </div>
       </div>
       <div className="space-y-1.5 p-3">
         <Link to="/rooms/$id" params={{ id: room.id }} className="block space-y-0.5">
           <h3 className="truncate font-medium">{room.title}</h3>
-          <p className="truncate text-foggy">{room.area} · {roomTypeLabel[room.roomType]}</p>
+          <p className="truncate text-foggy">{room.area} · {roomTypeLabel[room.roomType]}{room.gender ? ` · ${room.gender === "Mixed" ? "Ladies & gents" : room.gender}` : ""}</p>
           <p className="flex items-start gap-1.5 leading-snug text-foggy">
             <DistanceIcon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden/>
             <span>{distance}</span>
           </p>
         </Link>
+        {room.roomType === "hostel" && (<p className="flex flex-wrap gap-1.5 text-xs">
+            {room.meals === "available" && <span className="rounded-full border border-bebe px-2 py-0.5">Meals</span>}
+            {room.transport && <span className="rounded-full border border-bebe px-2 py-0.5">Transport</span>}
+            {room.jkuatListed && <span className="rounded-full border border-bebe px-2 py-0.5">In JKUAT guide</span>}
+          </p>)}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <StatusChip room={room}/>
           <span className="text-xs text-foggy">Trust {room.caretaker.trustScore}</span>
