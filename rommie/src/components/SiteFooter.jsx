@@ -83,7 +83,7 @@ export function SiteFooter() {
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
           <Logo />
           <p className="mt-3 max-w-sm text-sm text-foggy">
-            Vacant, verified student rooms near CUEA, Kenya School of Law and Co-operative University. Contact the caretaker directly on WhatsApp or by call.
+            Vacant, verified student rooms near CUEA, Kenya School of Law, JKUAT Karen Campus, Tangaza University and Co-operative University. Contact the caretaker directly on WhatsApp or by call.
           </p>
           <h3 className="mb-3 mt-6 text-sm font-semibold">Follow us</h3>
           <SocialIcons />
