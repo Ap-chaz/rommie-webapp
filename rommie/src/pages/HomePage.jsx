@@ -15,12 +15,8 @@ const PAGE_META = [
 const categories = [
     { label: "Rongai", icon: Building, search: { area: "Rongai" } },
     { label: "Gataka", icon: Trees, search: { area: "Gataka" } },
-    { label: "Ngong", icon: Mountain, search: { area: "Ngong" } },
     { label: "Karen", icon: Landmark, search: { area: "Karen" } },
     { label: "Maasai Lodge", icon: Tent, search: { area: "Maasai Lodge" } },
-    { label: "Near KSL", icon: GraduationCap, search: { near: "KSL" } },
-    { label: "Near CUEA", icon: GraduationCap, search: { near: "CUEA" } },
-    { label: "Near Co-op", icon: GraduationCap, search: { near: "Co-op" } },
 ];
 const rows = [
     { title: "Vacant now in Rongai", search: { area: "Rongai" }, pick: (r) => r.filter((x) => x.area === "Rongai") },
