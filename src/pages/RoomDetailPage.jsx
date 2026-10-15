@@ -11,6 +11,7 @@ import { ReportModal } from "@/components/ReportModal";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { hostelOffers } from "@/components/HostelFacts";
 import { campusShort, daysAgoLabel, formatKes, optionPrice, roomTypeLabel, whatsappLink } from "@/lib/format";
 const roomQuery = (id) => queryOptions({ queryKey: ["room", id], queryFn: () => getRoom(id) });
 const amenityIcon = { "Water 24/7": Droplets, WiFi: Wifi, Tokens: Zap, "Gated Security": ShieldCheck };
@@ -123,6 +124,10 @@ export default function RoomDetailPage() {
     const saved = isSaved(room.id);
     const save = () => toggle(room.id);
     const days = daysSince(room.lastConfirmedVacantAt);
+    const offers = [
+        ...room.amenities.map((a) => ({ key: a, Icon: amenityIcon[a], label: amenityLabel[a] })),
+        ...hostelOffers(room),
+    ];
     return (<div className="page-container max-w-[1180px] py-6 pb-10">
       <h1 className="text-page">{room.title}</h1>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
@@ -171,14 +176,9 @@ export default function RoomDetailPage() {
                     <span className="font-semibold">{optionPrice(o)}</span>
                   </li>))}
               </ul>
-              <dl className="mt-4 grid grid-cols-2 gap-4">
-                <div><dt className="text-foggy">Who can stay</dt><dd>{room.gender === "Mixed" ? "Ladies and gents" : room.gender ?? "Ask the hostel"}</dd></div>
-                <div><dt className="text-foggy">Meals</dt><dd>{room.meals === "available" ? "Available" : "Not provided"}</dd></div>
-                <div><dt className="text-foggy">Transport to campus</dt><dd>{room.transport ? "Available" : "Not provided"}</dd></div>
-                {room.registrationFeeKes ? <div><dt className="text-foggy">Registration fee</dt><dd>{formatKes(room.registrationFeeKes)} (non-refundable)</dd></div> : null}
-              </dl>
+              {room.registrationFeeKes ? <p className="mt-3"><span className="text-foggy">Registration fee: </span>{formatKes(room.registrationFeeKes)} (non-refundable)</p> : null}
               {room.notes && <p className="mt-3 text-foggy">{room.notes}</p>}
-              {room.jkuatListed && <p className="mt-3 flex items-center gap-1.5 text-sm font-medium"><ShieldCheck className="h-4 w-4"/> Listed in the JKUAT Karen Dean of Students hostels guide (2025)</p>}
+              {room.inGuide && <p className="mt-3 flex items-center gap-1.5 text-sm font-medium"><ShieldCheck className="h-4 w-4"/> Listed in the Karen Campus private hostels guide (2025)</p>}
               <p className="mt-3 text-sm text-foggy">Get a signed agreement that states the rent, services and deposit before you pay.</p>
             </section>)}
 
@@ -205,15 +205,12 @@ export default function RoomDetailPage() {
             <a href={room.mapLink} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 font-medium underline"><MapPin className="h-4 w-4"/> Open in Google Maps</a>
           </section>
 
-          <section className="py-6">
+          {offers.length > 0 && (<section className="py-6">
             <h2 className="text-section mb-2">What this place offers</h2>
             <ul className="divide-y divide-bebe">
-              {room.amenities.map((a) => {
-            const I = amenityIcon[a];
-            return <li key={a} className="flex items-center gap-4 py-3.5 text-base"><I className="h-6 w-6" strokeWidth={1.5}/> {amenityLabel[a]}</li>;
-        })}
+              {offers.map(({ key, Icon, label }) => (<li key={key} className="flex items-center gap-4 py-3.5 text-base"><Icon className="h-6 w-6" strokeWidth={1.5}/> {label}</li>))}
             </ul>
-          </section>
+          </section>)}
 
           <section className="py-6">
             <h2 className="text-section mb-4">Your caretaker</h2>

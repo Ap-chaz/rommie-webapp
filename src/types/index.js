@@ -50,10 +50,11 @@
  * @property {Gender} [gender]               Hostels only. Leave empty for open rentals.
  * @property {Meals} [meals]                 Hostels only.
  * @property {boolean} [transport]           Hostels only: the hostel runs transport to campus.
- * @property {string} [distanceLabel]        Hostels only, e.g. "2.5 km to JKUAT Karen".
+ * @property {string} [distanceLabel]        Hostels only, e.g. "2.5 km to campus".
  * @property {RoomOption[]} [roomOptions]    Hostels only. rentKes is the cheapest option as a monthly figure.
  * @property {number} [registrationFeeKes]   One-off non-refundable fee some hostels charge.
- * @property {boolean} [jkuatListed]         Appears in the JKUAT Karen Dean of Students private hostels guide.
+ * @property {boolean} [inGuide]              Appears in the Karen Campus Dean of Students private hostels guide (2025), which covers all nearby schools.
+ * @property {Campus} [nearCampus]           The campus the guide names for this hostel, when it names one.
  * @property {string} [notes]                Extra terms, e.g. "Electricity not included".
  * @property {boolean} [hidden]  Set by an admin to take a stale or reported listing off the public site.
  */

@@ -93,7 +93,7 @@ export async function getRooms(filters = {}) {
             return false;
         if (filters.amenities?.length && !filters.amenities.every((a) => r.amenities.includes(a)))
             return false;
-        if (filters.near && !(r.jkuatListed && filters.near === "JKUAT") && minutesTo(r, filters.near) > 20)
+        if (filters.near && !(r.inGuide && (!r.nearCampus || r.nearCampus === filters.near)) && minutesTo(r, filters.near) > 20)
             return false;
         return true;
     });

@@ -3,6 +3,7 @@ import { Link } from "@/lib/router";
 import { Bus, Footprints, Heart, MessageCircle, ShieldCheck } from "lucide-react";
 import { useSaved } from "@/lib/saved";
 import { daysSince } from "@/services/api";
+import { HostelChips } from "@/components/HostelFacts";
 import { daysAgoLabel, formatKes, nearestCampus, roomTypeLabel, STALE_DAYS, whatsappLink } from "@/lib/format";
 import { cn } from "@/lib/utils";
 export function StatusLine({ room }) {
@@ -74,11 +75,7 @@ export function RoomCard({ room }) {
             <span>{distance}</span>
           </p>
         </Link>
-        {room.roomType === "hostel" && (<p className="flex flex-wrap gap-1.5 text-xs">
-            {room.meals === "available" && <span className="rounded-full border border-bebe px-2 py-0.5">Meals</span>}
-            {room.transport && <span className="rounded-full border border-bebe px-2 py-0.5">Transport</span>}
-            {room.jkuatListed && <span className="rounded-full border border-bebe px-2 py-0.5">In JKUAT guide</span>}
-          </p>)}
+        {room.roomType === "hostel" && <HostelChips room={room}/>}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <StatusChip room={room}/>
           <span className="text-xs text-foggy">Trust {room.caretaker.trustScore}</span>

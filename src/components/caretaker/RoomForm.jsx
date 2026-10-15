@@ -135,7 +135,7 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
         const roomOptions = isHostel ? v.roomOptions.map((o) => ({ label: o.label, rentKes: toNum(o.rent), ...(o.maxRent ? { maxKes: toNum(o.maxRent) } : {}), billing: o.billing })) : undefined;
         const hostelFields = isHostel ? {
             roomOptions, gender: v.gender, meals: v.meals ? "available" : "none", transport: v.transport,
-            distanceLabel: v.distanceKm !== "" ? `${Number(v.distanceKm)} km to JKUAT Karen` : undefined,
+            distanceLabel: v.distanceKm !== "" ? `${Number(v.distanceKm)} km to campus` : undefined,
             registrationFeeKes: v.registrationFee ? toNum(v.registrationFee) : undefined,
         } : {};
         try {
@@ -197,7 +197,7 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
                   <option value="Mixed">Ladies and gents</option>
                 </SelectInput>)}
             </Field>
-            <Field label="Distance to JKUAT Karen (km)" optional error={errors.distanceKm?.message}>
+            <Field label="Distance to campus (km)" optional error={errors.distanceKm?.message}>
               {(p) => <TextInput {...p} inputMode="decimal" placeholder="1.5" {...f.register("distanceKm")}/>}
             </Field>
             <Field label="Registration fee (KES)" optional error={errors.registrationFee?.message} hint="One-off, non-refundable.">
