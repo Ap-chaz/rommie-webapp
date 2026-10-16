@@ -114,6 +114,21 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
     });
     const { errors, isSubmitting } = f.formState;
     const options = useFieldArray({ control: f.control, name: "roomOptions" });
+    // Photos of each room option, by option position, so students can tell a single from an executive room.
+    const [optPhotos, setOptPhotos] = useState(() => (initial?.roomOptions ?? []).map((o) => toItems(o.photos ?? [])));
+    const setOptItems = (i) => (upd) => setOptPhotos((all) => all.map((cur, k) => (k === i ? (typeof upd === "function" ? upd(cur) : upd) : cur)));
+    const optPhotoError = (i) => {
+        if (!triedSubmit)
+            return undefined;
+        const list = optPhotos[i] ?? [];
+        if (list.some((p) => p.status === "uploading"))
+            return "Wait for the photos to finish uploading.";
+        if (list.some((p) => p.status === "error"))
+            return "Retry or remove the photos that failed.";
+        if (options.fields.length > 1 && !list.some((p) => p.status === "done"))
+            return "Add at least 1 photo of this room type so students can tell the rooms apart.";
+        return undefined;
+    };
     const isHostel = f.watch("roomType") === "hostel";
     const [photos, setPhotos] = useState(() => toItems(initial?.photos ?? []));
     const [triedSubmit, setTriedSubmit] = useState(false);
@@ -129,10 +144,15 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
     const valid = async (v) => {
         if (photos.some((p) => p.status !== "done") || done.length < MIN_PHOTOS)
             return;
+        if (v.roomType === "hostel" && v.roomOptions.some((_, i) => optPhotoError(i) !== undefined || (optPhotos[i] ?? []).some((p) => p.status !== "done")))
+            return;
         const area = v.area;
         const roomType = v.roomType;
         const distances = isHostel ? {} : Object.fromEntries(CAMPUSES.map((c) => [c.id, { walkMin: num(v[`${c.key}Walk`]), matatuMin: num(v[`${c.key}Matatu`]) }]));
-        const roomOptions = isHostel ? v.roomOptions.map((o) => ({ label: o.label, rentKes: toNum(o.rent), ...(o.maxRent ? { maxKes: toNum(o.maxRent) } : {}), billing: o.billing })) : undefined;
+        const roomOptions = isHostel ? v.roomOptions.map((o, i) => {
+            const urls = (optPhotos[i] ?? []).filter((p) => p.status === "done").map((p) => p.url);
+            return { label: o.label, rentKes: toNum(o.rent), ...(o.maxRent ? { maxKes: toNum(o.maxRent) } : {}), billing: o.billing, ...(urls.length ? { photos: urls } : {}) };
+        }) : undefined;
         const hostelFields = isHostel ? {
             roomOptions, gender: v.gender, meals: v.meals ? "available" : "none", transport: v.transport,
             distanceLabel: v.distanceKm !== "" ? `${Number(v.distanceKm)} km to campus` : undefined,
@@ -233,11 +253,15 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
                   {(p) => <TextInput {...p} inputMode="numeric" placeholder="19000" {...f.register(`roomOptions.${i}.maxRent`)}/>}
                 </Field>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => options.remove(i)}><Trash2 /> Remove option</Button>
+              <div>
+                <p className="mb-2 text-sm font-medium">Photos of this room type{options.fields.length > 1 ? " *" : " (optional)"}</p>
+                <PhotoUploader items={optPhotos[i] ?? []} setItems={setOptItems(i)} error={optPhotoError(i)} min={1} max={5} label={`${f.watch(`roomOptions.${i}.label`) || "Option"} photo`} hint="Show this exact room: bed, bathroom and furniture. Up to 5 photos."/>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => { options.remove(i); setOptPhotos((all) => all.filter((_, k) => k !== i)); }}><Trash2 /> Remove option</Button>
             </fieldset>))}
           {typeof errors.roomOptions?.message === "string" && <p role="alert" className="text-sm font-medium">{errors.roomOptions.message}</p>}
           {errors.roomOptions?.root?.message && <p role="alert" className="text-sm font-medium">{errors.roomOptions.root.message}</p>}
-          <Button type="button" variant="outline" onClick={() => options.append({ label: "", rent: "", maxRent: "", billing: "month" })}><Plus /> Add a room option</Button>
+          <Button type="button" variant="outline" onClick={() => { options.append({ label: "", rent: "", maxRent: "", billing: "month" }); setOptPhotos((all) => [...all, []]); }}><Plus /> Add a room option</Button>
           <Field label="Deposit terms" error={errors.depositTerms?.message} required>
             {(p) => <TextInput {...p} placeholder="One month deposit, or “Ask the hostel”" {...f.register("depositTerms")}/>}
           </Field>

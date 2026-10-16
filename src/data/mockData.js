@@ -52,7 +52,7 @@ const hostelRooms = hostelSeeds.map((h, i) => ({
     gender: h.gender,
     meals: h.meals,
     transport: h.transport,
-    roomOptions: h.options,
+    roomOptions: h.options.map((o, j) => ({ ...o, photos: [P[(i + j) % 4], P[(i + j + 1) % 4]] })),
     registrationFeeKes: h.regFee,
     inGuide: true,
     notes: h.notes,

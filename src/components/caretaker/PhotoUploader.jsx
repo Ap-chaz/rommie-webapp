@@ -6,7 +6,7 @@ import { uploadPhoto } from "@/services/api";
 export const MIN_PHOTOS = 3;
 export const MAX_PHOTOS = 10;
 const newId = () => Math.random().toString(36).slice(2, 10);
-export function PhotoUploader({ items, setItems, error, }) {
+export function PhotoUploader({ items, setItems, error, min = MIN_PHOTOS, max = MAX_PHOTOS, label = "Room photo", hint }) {
     const gallery = useRef(null);
     const camera = useRef(null);
     const patch = (id, p) => setItems((cur) => cur.map((i) => (i.id === id ? { ...i, ...p } : i)));
@@ -24,7 +24,7 @@ export function PhotoUploader({ items, setItems, error, }) {
     const add = (files) => {
         if (!files)
             return;
-        const room = MAX_PHOTOS - items.length;
+        const room = max - items.length;
         const picked = Array.from(files).slice(0, Math.max(room, 0));
         const fresh = picked.map((file) => ({ id: newId(), file }));
         setItems((cur) => [...cur, ...fresh.map(({ id, file }) => ({ id, status: "uploading", progress: 0, file }))]);
@@ -39,7 +39,7 @@ export function PhotoUploader({ items, setItems, error, }) {
         return next;
     });
     const done = items.filter((i) => i.status === "done").length;
-    const full = items.length >= MAX_PHOTOS;
+    const full = items.length >= max;
     return (<div>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" disabled={full} onClick={() => camera.current?.click()}><Camera /> Take a photo</Button>
@@ -48,12 +48,12 @@ export function PhotoUploader({ items, setItems, error, }) {
         <input ref={gallery} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => { add(e.target.files); e.target.value = ""; }}/>
       </div>
       <p className={`mt-2 text-sm ${error ? "font-medium text-hof" : "text-foggy"}`} role={error ? "alert" : undefined}>
-        {error ?? `${done} of ${MIN_PHOTOS} minimum added. Up to ${MAX_PHOTOS}. The first photo is the cover.`}
+        {error ?? hint ?? `${done} of ${min} minimum added. Up to ${max}. The first photo is the cover.`}
       </p>
 
       {items.length > 0 && (<ul className="mt-4 grid grid-cols-3 gap-3 md:grid-cols-5">
           {items.map((it, idx) => (<li key={it.id} className="relative aspect-square overflow-hidden rounded-xl bg-deco">
-              {it.url && <img src={it.url} alt={`Room photo ${idx + 1}`} className="h-full w-full object-cover"/>}
+              {it.url && <img src={it.url} alt={`${label} ${idx + 1}`} className="h-full w-full object-cover"/>}
               {idx === 0 && it.status === "done" && (<span className="absolute left-2 top-2 rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold shadow-search">Cover</span>)}
               {it.status === "uploading" && (<div className="absolute inset-x-0 bottom-0 bg-card/90 p-2">
                   <div className="h-1.5 overflow-hidden rounded-full bg-bebe" role="progressbar" aria-valuenow={it.progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Uploading photo ${idx + 1}`}>

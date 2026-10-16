@@ -93,6 +93,7 @@ export default function RoomDetailPage() {
         })()
         : [{ title: "Room · Rommie" }, { name: "description", content: "Room details on Rommie." }]);
     const [lightbox, setLightbox] = useState(null);
+    const [optBox, setOptBox] = useState(null);
     const [report, setReport] = useState(false);
     const [slide, setSlide] = useState(0);
     const slider = useRef(null);
@@ -171,9 +172,13 @@ export default function RoomDetailPage() {
           {room.roomOptions?.length > 0 && (<section className="py-6">
               <h2 className="text-section mb-4">Room options & prices</h2>
               <ul className="divide-y divide-bebe rounded-xl border border-bebe">
-                {room.roomOptions.map((o) => (<li key={o.label} className="flex items-center justify-between gap-4 px-4 py-3">
-                    <span>{o.label}</span>
-                    <span className="font-semibold">{optionPrice(o)}</span>
+                {room.roomOptions.map((o, oi) => (<li key={o.label} className="flex items-center gap-4 px-4 py-3">
+                    {o.photos?.length > 0 && (<button type="button" onClick={() => setOptBox({ i: oi, index: 0 })} className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-deco" aria-label={`See ${o.photos.length} photo${o.photos.length > 1 ? "s" : ""} of ${o.label}`}>
+                        <img src={o.photos[0]} alt={`${o.label} room`} loading="lazy" className="h-full w-full object-cover"/>
+                        {o.photos.length > 1 && <span className="absolute bottom-0.5 right-0.5 rounded bg-hof/80 px-1 text-[11px] font-medium text-primary-foreground">{o.photos.length}</span>}
+                      </button>)}
+                    <span className="min-w-0 flex-1">{o.label}</span>
+                    <span className="shrink-0 text-right font-semibold">{optionPrice(o)}</span>
                   </li>))}
               </ul>
               {room.registrationFeeKes ? <p className="mt-3"><span className="text-foggy">Registration fee: </span>{formatKes(room.registrationFeeKes)} (non-refundable)</p> : null}
@@ -263,6 +268,7 @@ export default function RoomDetailPage() {
       </div>
 
       <Lightbox photos={room.photos} title={room.title} index={lightbox} onIndex={setLightbox} onClose={() => setLightbox(null)}/>
+      {optBox && <Lightbox photos={room.roomOptions[optBox.i].photos} title={`${room.title} · ${room.roomOptions[optBox.i].label}`} index={optBox.index} onIndex={(index) => setOptBox((b) => ({ ...b, index }))} onClose={() => setOptBox(null)}/>}
       <ReportModal roomId={room.id} open={report} onOpenChange={setReport}/>
     </div>);
 }
