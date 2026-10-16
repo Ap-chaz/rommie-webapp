@@ -13,8 +13,8 @@ export const CONTACT = {
     whatsappDisplay: "+254 700 000 000",
     phone: "+254700000000",
     phoneDisplay: "+254 700 000 000",
-    hours: "Mon to Sat, 8am to 6pm (EAT)",
-    location: "Rongai, Kajiado County, Kenya",
+    hours: "Mon to Fri",
+    location: "Karen, Nairobi County, Kenya",
 };
 export const SOCIALS = {
     instagram: "https://www.instagram.com/rommie.ke",
