@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { BadgeCheck, Bus, Droplets, Flag, Footprints, Grid2x2, ChevronLeft, ChevronRight, Heart, MapPin, MessageCircle, Phone, ShieldCheck, Wifi, X, Zap } from "lucide-react";
 import { useSaved } from "@/lib/saved";
-import { daysSince, getRoom } from "@/services/api";
+import { daysSince, getBuildingRooms, getRoom } from "@/services/api";
 import { StatusLine } from "@/components/RoomCard";
 import { ReportModal } from "@/components/ReportModal";
 import { Button } from "@/components/ui/button";
@@ -103,6 +103,7 @@ export default function RoomDetailPage() {
             el.scrollTo({ left: (Math.round(el.scrollLeft / el.clientWidth) + d) * el.clientWidth, behavior: "smooth" });
     };
     const { isSaved, toggle } = useSaved();
+    const building = useQuery({ queryKey: ["building", room?.buildingId, room?.id], queryFn: () => getBuildingRooms(room.buildingId, room.id), enabled: !!room?.buildingId });
     if (q.isLoading) {
         return (<div className="page-container max-w-[1180px] py-6" aria-busy="true" aria-label="Loading room">
         <div className="h-9 w-72 max-w-full animate-pulse rounded-lg bg-deco"/>
@@ -216,6 +217,22 @@ export default function RoomDetailPage() {
               {offers.map(({ key, Icon, label }) => (<li key={key} className="flex items-center gap-4 py-3.5 text-base"><Icon className="h-6 w-6" strokeWidth={1.5}/> {label}</li>))}
             </ul>
           </section>)}
+
+          {building.data?.length > 0 && (<section className="py-6">
+              <h2 className="text-section mb-2">Other rooms in this building</h2>
+              <ul className="divide-y divide-bebe rounded-xl border border-bebe">
+                {building.data.map((r) => (<li key={r.id}>
+                    <Link to="/rooms/$id" params={{ id: r.id }} className="flex items-center gap-4 px-4 py-3 hover:bg-faint">
+                      <img src={r.photos[0]} alt="" loading="lazy" className="h-14 w-16 shrink-0 rounded-lg bg-deco object-cover"/>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium">{roomTypeLabel[r.roomType]}</span>
+                        <span className="block text-foggy">{r.status === "Vacant" ? "Vacant" : "Taken"}</span>
+                      </span>
+                      <span className="shrink-0 font-semibold">{formatKes(r.rentKes)}<span className="font-normal text-foggy">/mo</span></span>
+                    </Link>
+                  </li>))}
+              </ul>
+            </section>)}
 
           <section className="py-6">
             <h2 className="text-section mb-4">Your caretaker</h2>

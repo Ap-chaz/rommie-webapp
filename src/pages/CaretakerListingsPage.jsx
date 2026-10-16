@@ -144,6 +144,7 @@ function ListingRow({ room, onToggle, onReconfirm, onDelete }) {
           <span className="font-medium">{vacant ? "Vacant" : "Taken"}</span>
         </label>
         <div className="flex items-center gap-1">
+          <Button asChild variant="outline"><Link to="/caretaker/post" search={{ copy: room.id }}><Plus /> Add another room type</Link></Button>
           <Button asChild variant="outline"><Link to="/caretaker/edit/$id" params={{ id: room.id }}><Pencil /> Edit</Link></Button>
           <Button variant="circle" size="icon" aria-label={`Delete ${room.title}`} onClick={onDelete} className="h-11 w-11"><Trash2 /></Button>
         </div>
