@@ -25,6 +25,7 @@
  * @property {number} rentKes          Price, or the low end of a price range.
  * @property {number} [maxKes]         High end when the hostel quotes a range.
  * @property {Billing} billing         Hostels quote per month or per semester (about 4 months).
+ * @property {string[]} [photos]       Photos of this room type, so students can tell a single from an executive room.
  */
 
 /**
