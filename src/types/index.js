@@ -57,6 +57,7 @@
  * @property {boolean} [inGuide]              Appears in the Karen Campus Dean of Students private hostels guide (2025), which covers all nearby schools.
  * @property {Campus} [nearCampus]           The campus the guide names for this hostel, when it names one.
  * @property {string} [notes]                Extra terms, e.g. "Electricity not included".
+ * @property {string} [buildingId]   Shared by listings posted for different room types in the same building.
  * @property {boolean} [hidden]  Set by an admin to take a stale or reported listing off the public site.
  */
 

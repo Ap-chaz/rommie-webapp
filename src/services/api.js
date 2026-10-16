@@ -188,6 +188,11 @@ export async function reconfirmRoom(id) {
     rooms = rooms.map((r) => (r.id === id ? { ...r, hidden: false } : r));
 }
 export async function deleteListing(id) { await delay(300); rooms = rooms.filter((r) => r.id !== id); }
+/** Other visible listings in the same building (same buildingId), so students can see every room type on offer. */
+export async function getBuildingRooms(buildingId, excludeId) {
+    await delay(150);
+    return rooms.filter((r) => r.buildingId === buildingId && r.id !== excludeId && !r.hidden).map(withCaretaker);
+}
 export async function getMyListings(caretakerId) {
     await delay();
     const owner = caretakerId ?? getSession()?.id;
