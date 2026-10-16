@@ -31,7 +31,7 @@ function colsFor(me) {
             { to: "/for-caretakers", l: "List your room" },
             { to: "/caretaker/signup", l: "Caretaker sign up" },
             { to: "/caretaker/login", l: "Caretaker log in" },
-            { to: "/caretaker/profile", l: "Get verified" },
+            { to: "/how-verification-works", l: "Get verified" },
         ]
         : me.role === "caretaker"
             ? [
