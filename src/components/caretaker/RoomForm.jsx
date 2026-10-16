@@ -117,8 +117,8 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
     // Photos of each room option, by option position, so students can tell a single from an executive room.
     const [optPhotos, setOptPhotos] = useState(() => (initial?.roomOptions ?? []).map((o) => toItems(o.photos ?? [])));
     const setOptItems = (i) => (upd) => setOptPhotos((all) => all.map((cur, k) => (k === i ? (typeof upd === "function" ? upd(cur) : upd) : cur)));
-    const optPhotoError = (i) => {
-        if (!triedSubmit)
+    const optPhotoError = (i, force = false) => {
+        if (!triedSubmit && !force)
             return undefined;
         const list = optPhotos[i] ?? [];
         if (list.some((p) => p.status === "uploading"))
@@ -141,11 +141,18 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
     const uploading = photos.some((p) => p.status === "uploading");
     const campusErr = CAMPUSES.flatMap((c) => [errors[`${c.key}Walk`], errors[`${c.key}Matatu`]]).find(Boolean)?.message;
     const bad = (m) => !!m;
+    /** After a failed submit, say so and bring the first problem into view: errors can be far below the Post button. */
+    const revealProblem = () => {
+        toast.error("Some details are missing or need fixing. Check the fields marked with a message.");
+        setTimeout(() => {
+            document.querySelector("form [role=alert]")?.scrollIntoView({ block: "center", behavior: "smooth" });
+        }, 60);
+    };
     const valid = async (v) => {
         if (photos.some((p) => p.status !== "done") || done.length < MIN_PHOTOS)
-            return;
-        if (v.roomType === "hostel" && v.roomOptions.some((_, i) => optPhotoError(i) !== undefined || (optPhotos[i] ?? []).some((p) => p.status !== "done")))
-            return;
+            return revealProblem();
+        if (v.roomType === "hostel" && v.roomOptions.some((_, i) => optPhotoError(i, true) !== undefined || (optPhotos[i] ?? []).some((p) => p.status !== "done")))
+            return revealProblem();
         const area = v.area;
         const roomType = v.roomType;
         const distances = isHostel ? {} : Object.fromEntries(CAMPUSES.map((c) => [c.id, { walkMin: num(v[`${c.key}Walk`]), matatuMin: num(v[`${c.key}Matatu`]) }]));
@@ -177,7 +184,7 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
     };
     const submit = (e) => {
         setTriedSubmit(true);
-        return f.handleSubmit(valid)(e);
+        return f.handleSubmit(valid, revealProblem)(e);
     };
     const time = (name, label) => (<label className="block">
       <span className="mb-1 block text-xs text-foggy">{label}</span>
