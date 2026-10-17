@@ -713,10 +713,10 @@ export async function signUp(data) {
     if (accounts.some((a) => a.phone && a.phone === data.phone)) {
         throw new AuthError("An account with this number already exists. Try logging in.", "phone");
     }
-    return createAccount({ name: data.name, email, phone: data.phone, role: data.role, password: data.password });
+    return createAccount({ name: data.name, firstName: data.firstName, lastName: data.lastName, school: data.school, email, phone: data.phone, role: data.role, password: data.password });
 }
-function createAccount({ name, email, phone, role, password, google }) {
-    const acct = { id: `${role === "caretaker" ? "c" : "u"}-${uid()}`, name, email, phone, role, phoneVerified: false, ...(password ? { password } : {}), ...(google ? { google: true } : {}) };
+function createAccount({ name, firstName, lastName, school, email, phone, role, password, google }) {
+    const acct = { id: `${role === "caretaker" ? "c" : "u"}-${uid()}`, name, ...(firstName ? { firstName } : {}), ...(lastName ? { lastName } : {}), ...(school ? { school } : {}), email, phone, role, phoneVerified: false, ...(password ? { password } : {}), ...(google ? { google: true } : {}) };
     accounts.push(acct);
     if (role === "caretaker") {
         caretakers.push({ id: acct.id, name: acct.name, phone: acct.phone, verified: false, trustScore: 50, joinedAt: new Date().toISOString() });
