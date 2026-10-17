@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link, useNavigate } from "@/lib/router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,29 +6,53 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Field, PasswordInput, TextInput } from "@/components/forms/Field";
+import { Field, PasswordInput, SelectInput, TextInput } from "@/components/forms/Field";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleButton, OrDivider } from "@/components/auth/GoogleButton";
 import { AuthError, signUp } from "@/services/api";
 import { useGoAfterAuth, useRedirectIfSignedIn } from "@/lib/auth";
-import { normalizeKenyanPhone } from "@/lib/format";
+import { CAMPUSES, normalizeKenyanPhone } from "@/lib/format";
 import { emailField, passwordField, phoneField } from "@/lib/validation";
-const schema = z.object({
-    name: z.string().trim().min(2, "Enter your full name."),
+const OTHER_SCHOOL = "other";
+/** Students must say where they study; caretakers don't have a school, so that part is skipped for them. */
+const makeSchema = (needsSchool) => z.object({
+    firstName: z.string().trim().min(2, "Enter your first name."),
+    lastName: z.string().trim().min(2, "Enter your last name."),
+    school: z.string(),
+    schoolOther: z.string().trim(),
     email: emailField,
     phone: phoneField,
     password: passwordField,
+}).superRefine((v, ctx) => {
+    if (!needsSchool)
+        return;
+    if (!v.school)
+        ctx.addIssue({ code: "custom", path: ["school"], message: "Choose your school." });
+    else if (v.school === OTHER_SCHOOL && v.schoolOther.length < 2)
+        ctx.addIssue({ code: "custom", path: ["schoolOther"], message: "Enter the name of your school." });
 });
 export function SignupForm({ role, redirect }) {
     const caretaker = role === "caretaker";
     const navigate = useNavigate();
     const goAfter = useGoAfterAuth();
     useRedirectIfSignedIn(redirect);
-    const f = useForm({ resolver: zodResolver(schema), defaultValues: { name: "", email: "", phone: "", password: "" } });
+    const schema = useMemo(() => makeSchema(!caretaker), [caretaker]);
+    const f = useForm({ resolver: zodResolver(schema), defaultValues: { firstName: "", lastName: "", school: "", schoolOther: "", email: "", phone: "", password: "" } });
     const { errors, isSubmitting } = f.formState;
+    const school = f.watch("school");
     const submit = f.handleSubmit(async (v) => {
         try {
-            await signUp({ name: v.name, email: v.email, phone: normalizeKenyanPhone(v.phone), password: v.password, role });
+            const schoolName = v.school === OTHER_SCHOOL ? v.schoolOther : CAMPUSES.find((c) => c.id === v.school)?.name;
+            await signUp({
+                name: `${v.firstName} ${v.lastName}`,
+                firstName: v.firstName,
+                lastName: v.lastName,
+                ...(!caretaker && schoolName ? { school: schoolName } : {}),
+                email: v.email,
+                phone: normalizeKenyanPhone(v.phone),
+                password: v.password,
+                role,
+            });
             toast.success("Account created. Let's verify your number.");
             await navigate({ to: "/verify-phone", search: redirect ? { redirect } : {} });
         }
@@ -48,9 +73,26 @@ export function SignupForm({ role, redirect }) {
           </p>
         </div>}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        <Field label="Full name" error={errors.name?.message} required>
-          {(p) => <TextInput {...p} autoComplete="name" {...f.register("name")}/>}
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="First name" error={errors.firstName?.message} required>
+            {(p) => <TextInput {...p} autoComplete="given-name" {...f.register("firstName")}/>}
+          </Field>
+          <Field label="Last name" error={errors.lastName?.message} required>
+            {(p) => <TextInput {...p} autoComplete="family-name" {...f.register("lastName")}/>}
+          </Field>
+        </div>
+        {!caretaker && (<>
+          <Field label="School" error={errors.school?.message} required>
+            {(p) => (<SelectInput {...p} {...f.register("school")}>
+                <option value="">Choose your school</option>
+                {CAMPUSES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value={OTHER_SCHOOL}>Other</option>
+              </SelectInput>)}
+          </Field>
+          {school === OTHER_SCHOOL && (<Field label="School name" error={errors.schoolOther?.message} required>
+              {(p) => <TextInput {...p} autoComplete="organization" {...f.register("schoolOther")}/>}
+            </Field>)}
+        </>)}
         <Field label="Email" error={errors.email?.message} required>
           {(p) => <TextInput {...p} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" {...f.register("email")}/>}
         </Field>

@@ -77,6 +77,9 @@
  * @typedef {object} User
  * @property {string} id
  * @property {string} name
+ * @property {string} [firstName]
+ * @property {string} [lastName]
+ * @property {string} [school]           Students: the school they study at, chosen at sign up.
  * @property {string} phone
  * @property {"student" | "caretaker" | "admin"} role
  * @property {boolean} phoneVerified
