@@ -7,9 +7,16 @@ import { OtpBoxes } from "@/components/auth/OtpBoxes";
 import { ResendCode, useResend } from "@/components/auth/ResendCode";
 import { Button } from "@/components/ui/button";
 import { redirectSearch, useAuth, useGoAfterAuth, useLogout } from "@/lib/auth";
-import { otpMessage, sendOtp, verifyOtp } from "@/services/api";
+import { AuthError, otpMessage, sendOtp, setMyPhone, verifyOtp } from "@/services/api";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Field, TextInput } from "@/components/forms/Field";
+import { normalizeKenyanPhone } from "@/lib/format";
+import { phoneField } from "@/lib/validation";
 import { useNavigate, useSearch } from "@/lib/router";
 const PAGE_META = [{ title: "Verify your phone · Rommie" }, { name: "robots", content: "noindex" }];
+const phoneOnly = z.object({ phone: phoneField });
 const mask = (p) => `${p.slice(0, 4)} ${p[4] ?? ""}•• ••• ${p.slice(-3)}`;
 export default function VerifyPhone() {
     usePageMeta(PAGE_META);
@@ -46,6 +53,8 @@ export default function VerifyPhone() {
     if (!ready || !user || user.phoneVerified) {
         return <div className="page-container py-10"><div className="mx-auto h-64 max-w-md animate-pulse rounded-xl bg-deco"/></div>;
     }
+    if (!user.phone)
+        return <AddPhone logout={logout}/>;
     const check = async (value) => {
         setBusy(true);
         setError(undefined);
@@ -91,5 +100,32 @@ export default function VerifyPhone() {
         <p className="text-sm text-foggy">Demo mode: use 123456.</p>
         <ResendCode left={left} onResend={resend} disabled={sending}/>
       </div>
+    </AuthShell>);
+}
+
+/** Google accounts start without a phone number. Caretakers need one for WhatsApp and calls, students for alerts. */
+function AddPhone({ logout }) {
+    const f = useForm({ resolver: zodResolver(phoneOnly), defaultValues: { phone: "" } });
+    const { errors, isSubmitting } = f.formState;
+    const submit = f.handleSubmit(async (v) => {
+        try {
+            await setMyPhone(normalizeKenyanPhone(v.phone));
+        }
+        catch (e) {
+            if (e instanceof AuthError)
+                f.setError("phone", { message: e.message });
+            else
+                toast.error("Couldn't save your number. Try again.");
+        }
+    });
+    return (<AuthShell title="Add your phone number" subtitle="We'll text you a code to confirm it." footer={<button className="min-h-11 underline" onClick={logout}>Not you? Log out</button>}>
+      <form onSubmit={submit} noValidate className="space-y-4">
+        <Field label="Phone number" error={errors.phone?.message} required>
+          {(p) => <TextInput {...p} type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" {...f.register("phone")}/>}
+        </Field>
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="animate-spin"/>} Send code
+        </Button>
+      </form>
     </AuthShell>);
 }

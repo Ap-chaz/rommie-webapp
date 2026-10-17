@@ -80,6 +80,7 @@
  * @property {string} phone
  * @property {"student" | "caretaker" | "admin"} role
  * @property {boolean} phoneVerified
+ * @property {string} email
  * @property {boolean} [studentVerified]
  */
 

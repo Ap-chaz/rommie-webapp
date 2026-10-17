@@ -76,10 +76,10 @@ export const rooms = [...seeds.map(({ confirmedDaysAgo, photoStart, ...s }) => {
     };
 }), ...hostelRooms];
 export const accounts = [
-    { id: "u1", name: "Amina Student", phone: "+254711111111", role: "student", phoneVerified: true, password: "password123" },
-    { id: "c1", name: "Mama Wanjiru", phone: "+254712345678", role: "caretaker", phoneVerified: true, password: "password123" },
-    { id: "c2", name: "John Otieno", phone: "+254722111222", role: "caretaker", phoneVerified: true, password: "password123" },
-    { id: "a1", name: "Rommie Admin", phone: "+254700000000", role: "admin", phoneVerified: true, password: "password123" },
+    { id: "u1", email: "amina@example.com", name: "Amina Student", phone: "+254711111111", role: "student", phoneVerified: true, password: "password123" },
+    { id: "c1", email: "wanjiru@example.com", name: "Mama Wanjiru", phone: "+254712345678", role: "caretaker", phoneVerified: true, password: "password123" },
+    { id: "c2", email: "otieno@example.com", name: "John Otieno", phone: "+254722111222", role: "caretaker", phoneVerified: true, password: "password123" },
+    { id: "a1", email: "admin@rommie.example", name: "Rommie Admin", phone: "+254700000000", role: "admin", phoneVerified: true, password: "password123" },
 ];
 /** A plain monochrome stand-in for an uploaded ID, so the admin viewer has something to show. */
 function docPlaceholder(title, name) {
