@@ -5,26 +5,29 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Field, TextInput } from "@/components/forms/Field";
+import { Field, PasswordInput, TextInput } from "@/components/forms/Field";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { GoogleButton, OrDivider } from "@/components/auth/GoogleButton";
 import { AuthError, signUp } from "@/services/api";
-import { useRedirectIfSignedIn } from "@/lib/auth";
+import { useGoAfterAuth, useRedirectIfSignedIn } from "@/lib/auth";
 import { normalizeKenyanPhone } from "@/lib/format";
-import { passwordField, phoneField } from "@/lib/validation";
+import { emailField, passwordField, phoneField } from "@/lib/validation";
 const schema = z.object({
     name: z.string().trim().min(2, "Enter your full name."),
+    email: emailField,
     phone: phoneField,
     password: passwordField,
 });
 export function SignupForm({ role, redirect }) {
     const caretaker = role === "caretaker";
     const navigate = useNavigate();
+    const goAfter = useGoAfterAuth();
     useRedirectIfSignedIn(redirect);
-    const f = useForm({ resolver: zodResolver(schema), defaultValues: { name: "", phone: "", password: "" } });
+    const f = useForm({ resolver: zodResolver(schema), defaultValues: { name: "", email: "", phone: "", password: "" } });
     const { errors, isSubmitting } = f.formState;
     const submit = f.handleSubmit(async (v) => {
         try {
-            await signUp({ name: v.name, phone: normalizeKenyanPhone(v.phone), password: v.password, role });
+            await signUp({ name: v.name, email: v.email, phone: normalizeKenyanPhone(v.phone), password: v.password, role });
             toast.success("Account created. Let's verify your number.");
             await navigate({ to: "/verify-phone", search: redirect ? { redirect } : {} });
         }
@@ -48,11 +51,14 @@ export function SignupForm({ role, redirect }) {
         <Field label="Full name" error={errors.name?.message} required>
           {(p) => <TextInput {...p} autoComplete="name" {...f.register("name")}/>}
         </Field>
+        <Field label="Email" error={errors.email?.message} required>
+          {(p) => <TextInput {...p} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" {...f.register("email")}/>}
+        </Field>
         <Field label="Phone number" error={errors.phone?.message} hint="We'll text you a code to confirm it." required>
           {(p) => <TextInput {...p} type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" {...f.register("phone")}/>}
         </Field>
         <Field label="Password" error={errors.password?.message} hint="At least 8 characters." required>
-          {(p) => <TextInput {...p} type="password" autoComplete="new-password" {...f.register("password")}/>}
+          {(p) => <PasswordInput {...p} autoComplete="new-password" {...f.register("password")}/>}
         </Field>
         <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="animate-spin"/>} Continue
@@ -61,5 +67,14 @@ export function SignupForm({ role, redirect }) {
           By continuing you agree to the <Link to="/terms" className="underline">Terms</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.
         </p>
       </form>
+      <OrDivider />
+      <GoogleButton role={role} label="Sign up with Google" onDone={(user) => {
+            toast.success(`Welcome, ${user.name.split(" ")[0]}`);
+            if (user.phoneVerified)
+                goAfter(user, redirect);
+            else
+                void navigate({ to: "/verify-phone", search: redirect ? { redirect } : {} });
+        }}/>
+
     </AuthShell>);
 }

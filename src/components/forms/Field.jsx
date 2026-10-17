@@ -1,5 +1,5 @@
-import { forwardRef, useId } from "react";
-import { AlertCircle } from "lucide-react";
+import { forwardRef, useId, useState } from "react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 export const controlClass = "block h-12 w-full rounded-[8px] border border-deco bg-card px-3 text-base text-hof placeholder:text-grey-500 focus-visible:border-hof focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-hof disabled:cursor-not-allowed disabled:bg-faint disabled:text-grey-500 aria-[invalid=true]:border-hof aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-hof";
 /** Label + control + inline error. Errors use text and an icon, never a new color. */
@@ -24,3 +24,14 @@ export const SelectInput = forwardRef(({ className, children, ...p }, ref) => (<
     {children}
   </select>));
 SelectInput.displayName = "SelectInput";
+/** Password box with a show/hide button. The button is a real button, so keyboard and screen readers get it too. */
+export const PasswordInput = forwardRef(({ className, ...p }, ref) => {
+    const [show, setShow] = useState(false);
+    return (<div className="relative">
+      <input ref={ref} type={show ? "text" : "password"} className={cn(controlClass, "pr-12", className)} {...p}/>
+      <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? "Hide password" : "Show password"} aria-pressed={show} className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-[8px] text-foggy hover:text-hof focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-hof">
+        {show ? <EyeOff className="h-5 w-5" strokeWidth={1.75} aria-hidden/> : <Eye className="h-5 w-5" strokeWidth={1.75} aria-hidden/>}
+      </button>
+    </div>);
+});
+PasswordInput.displayName = "PasswordInput";

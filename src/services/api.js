@@ -701,30 +701,80 @@ export function refreshSession() {
     if (!!session.studentVerified !== verified)
         setSession({ ...session, studentVerified: verified });
 }
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const normEmail = (e) => String(e ?? "").trim().toLowerCase();
 export async function signUp(data) {
     await delay(700);
-    if (accounts.some((a) => a.phone === data.phone)) {
+    const email = normEmail(data.email);
+    if (!EMAIL_RE.test(email))
+        throw new AuthError("Enter a valid email address.", "email");
+    if (accounts.some((a) => a.email === email))
+        throw new AuthError("An account with this email already exists. Try logging in.", "email");
+    if (accounts.some((a) => a.phone && a.phone === data.phone)) {
         throw new AuthError("An account with this number already exists. Try logging in.", "phone");
     }
-    const acct = { id: `${data.role === "caretaker" ? "c" : "u"}-${uid()}`, name: data.name, phone: data.phone, role: data.role, phoneVerified: false, password: data.password };
+    return createAccount({ name: data.name, email, phone: data.phone, role: data.role, password: data.password });
+}
+function createAccount({ name, email, phone, role, password, google }) {
+    const acct = { id: `${role === "caretaker" ? "c" : "u"}-${uid()}`, name, email, phone, role, phoneVerified: false, ...(password ? { password } : {}), ...(google ? { google: true } : {}) };
     accounts.push(acct);
-    if (data.role === "caretaker") {
+    if (role === "caretaker") {
         caretakers.push({ id: acct.id, name: acct.name, phone: acct.phone, verified: false, trustScore: 50, joinedAt: new Date().toISOString() });
     }
     const user = toUser(acct);
     setSession(user);
     return user;
 }
+/** Log in with email and password. A phone number still works, so older callers keep working. */
 export async function login(data) {
     await delay(600);
-    const acct = accounts.find((a) => a.phone === data.phone);
+    const email = normEmail(data.email);
+    const acct = email ? accounts.find((a) => a.email === email) : accounts.find((a) => a.phone === data.phone);
+    if (acct && acct.google && !acct.password)
+        throw new AuthError("This account uses Google. Tap Continue with Google instead.", "password");
     if (!acct || acct.password !== data.password)
-        throw new AuthError("Phone number or password is incorrect.", "password");
+        throw new AuthError("Email or password is incorrect.", "password");
     if (acct.role === "caretaker" && isSuspended(acct.id))
         throw new AuthError(SUSPENDED_MESSAGE, "password");
     const user = toUser(acct);
     setSession(user);
     return user;
+}
+/**
+ * MOCK of "Continue with Google". A real version sends the user through Google's account picker and your backend
+ * checks the ID token Google returns; only this function changes. Existing accounts are matched by email.
+ */
+export async function loginWithGoogle({ email, name, role }) {
+    await delay(700);
+    const e = normEmail(email);
+    if (!EMAIL_RE.test(e))
+        throw new AuthError("Enter a valid Google email address.", "email");
+    const existing = accounts.find((a) => a.email === e);
+    if (existing) {
+        if (existing.role === "caretaker" && isSuspended(existing.id))
+            throw new AuthError(SUSPENDED_MESSAGE, "email");
+        const user = toUser(existing);
+        setSession(user);
+        return user;
+    }
+    const display = String(name ?? "").trim() || e.split("@")[0];
+    return createAccount({ name: display, email: e, phone: "", role: role === "caretaker" ? "caretaker" : "student", google: true });
+}
+/** Add or change the signed-in person's phone number. It has to be verified again afterwards. */
+export async function setMyPhone(phone) {
+    await delay(400);
+    const u = requireUser();
+    if (accounts.some((a) => a.id !== u.id && a.phone === phone))
+        throw new AuthError("An account with this number already exists.", "phone");
+    const acct = accounts.find((a) => a.id === u.id);
+    if (acct) {
+        acct.phone = phone;
+        acct.phoneVerified = false;
+    }
+    const c = caretakers.find((x) => x.id === u.id);
+    if (c)
+        c.phone = phone;
+    setSession({ ...u, phone, phoneVerified: false });
 }
 /** Log in with a one-time code instead of a password (call sendOtp first). */
 export async function loginWithOtp(phone, code) {
