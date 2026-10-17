@@ -1,7 +1,7 @@
 import { usePageMeta } from "@/lib/usePageMeta";
 import { Link } from "@/lib/router";
 import { LegalPage } from "@/components/LegalPage";
-import { SUPPORT_EMAIL } from "@/lib/site";
+import { useSiteSettings } from "@/lib/settings";
 const desc = "How Rommie collects, uses and protects your personal information.";
 const PAGE_META = [
             { title: "Privacy Policy · Rommie" },
@@ -12,6 +12,7 @@ const PAGE_META = [
 // NOTE: plain-language draft. Have a Kenyan lawyer review it before launch.
 export default function Privacy() {
     usePageMeta(PAGE_META);
+    const contact = useSiteSettings();
     return (<LegalPage title="Privacy Policy" intro="Rommie helps university students in Kenya find vacant rooms near campus and contact the caretaker directly. This page explains what we collect, why, and the choices you have." sections={[
             {
                 heading: "What we collect",
@@ -51,7 +52,7 @@ export default function Privacy() {
                 heading: "Your rights",
                 body: (<>
               <p>Under the Data Protection Act, 2019 you can ask to see the information we hold about you, correct it, or have it deleted, and you can object to how it is used.</p>
-              <p>To make a request, write to <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>
+              <p>To make a request, write to <a className="underline" href={`mailto:${contact.email}`}>{contact.email}</a>.</p>
             </>),
             },
             {
@@ -60,7 +61,7 @@ export default function Privacy() {
             },
             {
                 heading: "Changes to this policy",
-                body: <p>If we change this policy in a way that matters, we will update the date above and tell you in the app. Questions? Read our <Link to="/terms" className="underline">Terms</Link> or write to <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</p>,
+                body: <p>If we change this policy in a way that matters, we will update the date above and tell you in the app. Questions? Read our <Link to="/terms" className="underline">Terms</Link> or write to <a className="underline" href={`mailto:${contact.email}`}>{contact.email}</a>.</p>,
             },
         ]}/>);
 }

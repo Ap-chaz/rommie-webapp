@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { BadgeCheck, Bus, Droplets, Flag, Footprints, Grid2x2, ChevronLeft, ChevronRight, Heart, MapPin, MessageCircle, Phone, ShieldCheck, Wifi, X, Zap } from "lucide-react";
 import { useSaved } from "@/lib/saved";
-import { daysSince, getBuildingRooms, getRoom } from "@/services/api";
+import { daysSince, getBuildingRooms, getRoom, trackContact } from "@/services/api";
 import { StatusLine } from "@/components/RoomCard";
 import { ReportModal } from "@/components/ReportModal";
 import { Button } from "@/components/ui/button";
@@ -261,8 +261,8 @@ export default function RoomDetailPage() {
               <p className="text-section"><span className="font-semibold">{formatKes(room.rentKes)}</span> <span className="text-base text-foggy">/month</span></p>
               <p className="mt-1 text-foggy">{room.depositTerms}</p>
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Button asChild size="lg" className="w-full"><a href={whatsappLink(room)} target="_blank" rel="noreferrer"><MessageCircle /> WhatsApp</a></Button>
-                <Button asChild variant="outline" size="lg" className="w-full"><a href={`tel:${room.callNumber}`}><Phone /> Call</a></Button>
+                <Button asChild size="lg" className="w-full"><a href={whatsappLink(room)} target="_blank" rel="noreferrer" onClick={() => trackContact(room.id, "whatsapp")}><MessageCircle /> WhatsApp</a></Button>
+                <Button asChild variant="outline" size="lg" className="w-full"><a href={`tel:${room.callNumber}`} onClick={() => trackContact(room.id, "call")}><Phone /> Call</a></Button>
               </div>
             </div>
           </section>
@@ -273,8 +273,8 @@ export default function RoomDetailPage() {
             <p className="text-section"><span className="font-semibold">{formatKes(room.rentKes)}</span> <span className="text-base text-foggy">/month</span></p>
             <p className="mt-1 text-foggy">{room.depositTerms}</p>
             <div className="mt-5 space-y-3">
-              <Button asChild className="w-full" size="lg"><a href={whatsappLink(room)} target="_blank" rel="noreferrer"><MessageCircle /> WhatsApp</a></Button>
-              <Button asChild variant="outline" className="w-full" size="lg"><a href={`tel:${room.callNumber}`}><Phone /> Call</a></Button>
+              <Button asChild className="w-full" size="lg"><a href={whatsappLink(room)} target="_blank" rel="noreferrer" onClick={() => trackContact(room.id, "whatsapp")}><MessageCircle /> WhatsApp</a></Button>
+              <Button asChild variant="outline" className="w-full" size="lg"><a href={`tel:${room.callNumber}`} onClick={() => trackContact(room.id, "call")}><Phone /> Call</a></Button>
             </div>
             <div className="mt-4 flex justify-center gap-6 text-sm">
               <button onClick={save} className="font-medium underline">{saved ? "Saved" : "Save"}</button>

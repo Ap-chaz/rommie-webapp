@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, usePathname } from "@/lib/router";
+import { ADMIN_LINKS } from "@/components/AdminNav";
 import { BadgeCheck, Bell, Building2, Heart, Home, LayoutDashboard, ListChecks, MapPin, PlusSquare, Search, User as UserIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
@@ -29,8 +30,7 @@ function menuFor(user) {
         ];
     if (user.role === "admin")
         return [
-            { label: "Dashboard", to: "/admin" },
-            { label: "Verification Queue", to: "/admin/verification" },
+            ...ADMIN_LINKS,
         ];
     return [
         { label: "Saved Rooms", to: "/saved" },

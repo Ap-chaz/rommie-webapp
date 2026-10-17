@@ -117,6 +117,8 @@ describe("admin tools (mock service)", () => {
         expect((await getAdminStats()).stale.some((r) => r.id === "r5")).toBe(false);
     });
     it("builds a caretaker profile with a breakdown that adds up", async () => {
+        await logout();
+        await login({ phone: "+254712345678", password: "password123" }); // a caretaker views their own profile
         const p = await getCaretakerProfile("c1");
         expect(p.trust.score).toBe(p.trust.items.reduce((n, i) => n + i.points, 0));
         expect(p.caretaker.trustScore).toBe(p.trust.score);

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@/lib/router";
 import { Bus, Footprints, Heart, MessageCircle, ShieldCheck } from "lucide-react";
 import { useSaved } from "@/lib/saved";
-import { daysSince } from "@/services/api";
+import { daysSince, trackContact } from "@/services/api";
 import { HostelChips } from "@/components/HostelFacts";
 import { daysAgoLabel, formatKes, nearestCampus, roomTypeLabel, STALE_DAYS, whatsappLink } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -80,7 +80,7 @@ export function RoomCard({ room }) {
           <StatusChip room={room}/>
           <span className="text-xs text-foggy">Trust {room.caretaker.trustScore}</span>
         </div>
-        {!taken && (<a href={whatsappLink(room)} target="_blank" rel="noreferrer" className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-hof text-sm font-medium hover:bg-faint">
+        {!taken && (<a href={whatsappLink(room)} target="_blank" rel="noreferrer" onClick={() => trackContact(room.id, "whatsapp")} className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-hof text-sm font-medium hover:bg-faint">
             <MessageCircle className="h-4 w-4" aria-hidden/> WhatsApp
           </a>)}
       </div>

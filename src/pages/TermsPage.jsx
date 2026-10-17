@@ -1,7 +1,7 @@
 import { usePageMeta } from "@/lib/usePageMeta";
 import { Link } from "@/lib/router";
 import { LegalPage } from "@/components/LegalPage";
-import { SUPPORT_EMAIL } from "@/lib/site";
+import { useSiteSettings } from "@/lib/settings";
 const desc = "The rules for using Rommie as a student or a caretaker.";
 const PAGE_META = [
             { title: "Terms of Use · Rommie" },
@@ -12,6 +12,7 @@ const PAGE_META = [
 // NOTE: plain-language draft. Have a Kenyan lawyer review it before launch.
 export default function Terms() {
     usePageMeta(PAGE_META);
+    const contact = useSiteSettings();
     return (<LegalPage title="Terms of Use" intro="By using Rommie you agree to these terms. They are written to be read, so please do." sections={[
             {
                 heading: "What Rommie is",
@@ -64,7 +65,7 @@ export default function Terms() {
             },
             {
                 heading: "Changes and contact",
-                body: <p>We may update these terms and will change the date above when we do. Continued use means you accept the new version. Governed by the laws of Kenya. Questions: <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. See also our <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>,
+                body: <p>We may update these terms and will change the date above when we do. Continued use means you accept the new version. Governed by the laws of Kenya. Questions: <a className="underline" href={`mailto:${contact.email}`}>{contact.email}</a>. See also our <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>,
             },
         ]}/>);
 }
