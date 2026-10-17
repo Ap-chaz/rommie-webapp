@@ -101,6 +101,19 @@
  */
 
 /** @typedef {"Fake listing" | "Already taken" | "Wrong price" | "Wrong photos" | "Other"} ReportReason */
+/** @typedef {"open" | "resolved" | "dismissed"} ReportStatus */
+
+/**
+ * One entry in the admin activity log.
+ * @typedef {object} ActivityEntry
+ * @property {string} id
+ * @property {string} at  ISO date
+ * @property {string} actorId
+ * @property {string} actor
+ * @property {string} action  e.g. "listing.hidden", "report.dismissed"
+ * @property {string} summary  One readable sentence.
+ * @property {object} [target]
+ */
 
 /**
  * @typedef {object} Report
@@ -108,6 +121,10 @@
  * @property {string} roomId
  * @property {ReportReason} reason
  * @property {string} [note]
+ * @property {ReportStatus} [status]  Missing means "open".
+ * @property {"hidden" | "resolved" | "dismissed" | "deleted"} [action]
+ * @property {string} [handledAt]
+ * @property {string} [handledBy]
  * @property {string} createdAt
  */
 
@@ -165,6 +182,8 @@
  * @property {number} contactsMade
  * @property {number} staleListings
  * @property {number} openReports
+ * @property {number} hiddenListings
+ * @property {number} contactsMade  WhatsApp and Call taps on listings that still exist.
  * @property {RoomWithCaretaker[]} stale
  */
 

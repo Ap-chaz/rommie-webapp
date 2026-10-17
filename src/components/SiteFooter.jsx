@@ -3,7 +3,7 @@ import { ArrowUp, Clock, Mail, MapPin, MessageCircle, Phone, ShieldCheck } from 
 import { Logo } from "./Logo";
 import { SocialIcons } from "./SocialIcons";
 import { AREAS, CAMPUSES } from "@/lib/format";
-import { CONTACT, SOCIALS, SUPPORT_EMAIL } from "@/lib/site";
+import { useSiteSettings } from "@/lib/settings";
 import { useAuth, useLogout } from "@/lib/auth";
 const linkClass = "inline-flex min-h-8 items-center text-sm text-foggy hover:text-hof hover:underline";
 /** Footer columns for the current visitor: no "Log in" or "Sign up" once someone is signed in. */
@@ -65,6 +65,7 @@ function colsFor(me) {
 export function SiteFooter() {
     const { user, ready } = useAuth();
     const logout = useLogout();
+    const contact = useSiteSettings();
     // Signed-out view until hydration finishes, so server and client markup match.
     const cols = colsFor(ready ? user : null);
     return (<footer className="mt-12 border-t border-bebe bg-faint pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
@@ -102,31 +103,31 @@ export function SiteFooter() {
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
           <h3 className="mb-3 text-sm font-semibold">Contact us</h3>
           <ul className="space-y-3 text-sm text-foggy">
-            {SOCIALS.whatsapp && (<li>
-                <a href={SOCIALS.whatsapp} target="_blank" rel="noopener noreferrer" className="flex min-h-8 items-start gap-2.5 hover:text-hof">
+            {contact.whatsappLink && (<li>
+                <a href={contact.whatsappLink} target="_blank" rel="noopener noreferrer" className="flex min-h-8 items-start gap-2.5 hover:text-hof">
                   <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden/>
-                  <span><span className="block font-medium text-hof">WhatsApp</span>{CONTACT.whatsappDisplay}</span>
+                  <span><span className="block font-medium text-hof">WhatsApp</span>{contact.whatsappDisplay}</span>
                 </a>
               </li>)}
-            {CONTACT.phone && (<li>
-                <a href={`tel:${CONTACT.phone}`} className="flex min-h-8 items-start gap-2.5 hover:text-hof">
+            {contact.phone && (<li>
+                <a href={`tel:${contact.phone}`} className="flex min-h-8 items-start gap-2.5 hover:text-hof">
                   <Phone className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden/>
-                  <span><span className="block font-medium text-hof">Call</span>{CONTACT.phoneDisplay}</span>
+                  <span><span className="block font-medium text-hof">Call</span>{contact.phoneDisplay}</span>
                 </a>
               </li>)}
             <li>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="flex min-h-8 items-start gap-2.5 hover:text-hof">
+              <a href={`mailto:${contact.email}`} className="flex min-h-8 items-start gap-2.5 hover:text-hof">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden/>
-                <span className="min-w-0"><span className="block font-medium text-hof">Email</span><span className="break-all">{SUPPORT_EMAIL}</span></span>
+                <span className="min-w-0"><span className="block font-medium text-hof">Email</span><span className="break-all">{contact.email}</span></span>
               </a>
             </li>
-            {CONTACT.hours && (<li className="flex items-start gap-2.5">
+            {contact.hours && (<li className="flex items-start gap-2.5">
                 <Clock className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden/>
-                <span><span className="block font-medium text-hof">Support hours</span>{CONTACT.hours}</span>
+                <span><span className="block font-medium text-hof">Support hours</span>{contact.hours}</span>
               </li>)}
-            {CONTACT.location && (<li className="flex items-start gap-2.5">
+            {contact.location && (<li className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden/>
-                <span><span className="block font-medium text-hof">Based in</span>{CONTACT.location}</span>
+                <span><span className="block font-medium text-hof">Based in</span>{contact.location}</span>
               </li>)}
           </ul>
         </div>

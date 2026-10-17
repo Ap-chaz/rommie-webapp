@@ -2,7 +2,7 @@ import { usePageMeta } from "@/lib/usePageMeta";
 import { Link } from "@/lib/router";
 import { Flag, Mail, MessageCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SOCIALS, SUPPORT_EMAIL } from "@/lib/site";
+import { useSiteSettings } from "@/lib/settings";
 const desc = "Found a fake, taken or wrongly priced room? Here is how to report a listing to the Rommie team.";
 const PAGE_META = [
             { title: "Report a listing · Rommie" },
@@ -18,6 +18,7 @@ const STEPS = [
 ];
 export default function ReportPage() {
     usePageMeta(PAGE_META);
+    const contact = useSiteSettings();
     return (<article className="page-container max-w-[760px] py-8 md:py-12">
       <h1 className="text-page">Report a listing</h1>
       <p className="mt-3 text-base text-foggy">
@@ -42,8 +43,8 @@ export default function ReportPage() {
         <h2 className="text-section mb-2">Can't find the listing?</h2>
         <p className="text-foggy">Message us with the room title, area and what's wrong. A link or screenshot helps.</p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          {SOCIALS.whatsapp && (<Button asChild variant="outline" size="lg"><a href={SOCIALS.whatsapp} target="_blank" rel="noopener noreferrer"><MessageCircle /> WhatsApp us</a></Button>)}
-          <Button asChild variant="outline" size="lg"><a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Report a listing")}`}><Mail /> Email us</a></Button>
+          {contact.whatsappLink && (<Button asChild variant="outline" size="lg"><a href={contact.whatsappLink} target="_blank" rel="noopener noreferrer"><MessageCircle /> WhatsApp us</a></Button>)}
+          <Button asChild variant="outline" size="lg"><a href={`mailto:${contact.email}?subject=${encodeURIComponent("Report a listing")}`}><Mail /> Email us</a></Button>
         </div>
       </section>
 

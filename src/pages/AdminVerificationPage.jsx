@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ExternalLink, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { AdminNav } from "@/components/AdminNav";
 import { ErrorCard, StateCard } from "@/components/StateCard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RequireRole } from "@/lib/auth";
 import { shortDate } from "@/lib/format";
-import { getVerificationQueue, reviewVerification } from "@/services/api";
+import { getVerificationHistory, getVerificationQueue, reviewVerification, undoVerificationReview } from "@/services/api";
 const PAGE_META = [{ title: "Verification Queue · Rommie" }, { name: "robots", content: "noindex" }];
 
 export default function AdminVerificationPage() {
@@ -30,9 +31,18 @@ function Queue() {
         onSuccess: async (_d, { req, decision }) => {
             toast.success(decision === "approved" ? `Approved ${req.name}` : `Rejected ${req.name}`);
             setRejecting(null);
-            await Promise.all(["verification-queue", "rooms", "room", "caretaker-profile", "my-verification"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+            await Promise.all(["verification-queue", "rooms", "room", "caretaker-profile", "my-verification", "admin-verification-history", "admin-users", "admin-activity"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
         },
         onError: () => toast.error("Couldn't save the decision. Try again."),
+    });
+    const history = useQuery({ queryKey: ["admin-verification-history"], queryFn: getVerificationHistory });
+    const undo = useMutation({
+        mutationFn: (req) => undoVerificationReview(req.id),
+        onSuccess: async (_d, req) => {
+            toast.success(`${req.name} is back in the queue`);
+            await Promise.all(["verification-queue", "rooms", "room", "caretaker-profile", "my-verification", "admin-verification-history", "admin-users", "admin-activity"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+        },
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't undo that. Try again."),
     });
     const students = q.data?.filter((r) => r.kind === "student") ?? [];
     const caretakers = q.data?.filter((r) => r.kind === "caretaker") ?? [];
@@ -52,6 +62,7 @@ function Queue() {
           </li>))}
       </ul>);
     return (<div className="page-container max-w-[900px] py-6 md:py-10">
+      <AdminNav />
       <h1 className="text-page">Verification queue</h1>
       <p className="mt-1 text-foggy">Oldest first. Approving a caretaker adds the Verified badge to all their rooms.</p>
 
@@ -60,9 +71,26 @@ function Queue() {
             <TabsList className="no-scrollbar h-auto w-full justify-start gap-6 overflow-x-auto rounded-none border-b border-bebe bg-transparent p-0">
               <TabsTrigger value="students" className={tabClass}>Students ({students.length})</TabsTrigger>
               <TabsTrigger value="caretakers" className={tabClass}>Caretakers & landlords ({caretakers.length})</TabsTrigger>
+              <TabsTrigger value="history" className={tabClass}>History{history.data ? ` (${history.data.length})` : ""}</TabsTrigger>
             </TabsList>
             <TabsContent value="students" className="mt-6">{list(students)}</TabsContent>
             <TabsContent value="caretakers" className="mt-6">{list(caretakers)}</TabsContent>
+            <TabsContent value="history" className="mt-6">
+              {history.isError ? (<ErrorCard title="We couldn't load the history" onRetry={() => void history.refetch()}/>) : !history.data ? (<div className="h-24 animate-pulse rounded-xl bg-deco" aria-busy="true" aria-label="Loading"/>) : history.data.length === 0 ? (<StateCard title="No decisions yet." text="Approved and rejected requests will appear here."/>) : (<ul className="space-y-3">
+                  {history.data.map((r) => (<li key={r.id} className="flex flex-col gap-3 rounded-xl bg-card p-4 md:flex-row md:items-center">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base font-medium">{r.name} <span className="font-normal text-foggy">· {r.kind === "student" ? "Student" : "Caretaker"}</span></p>
+                        <p className="text-foggy">
+                          {r.status === "approved" ? "Approved" : "Rejected"}
+                          {r.reviewedBy ? ` by ${r.reviewedBy}` : ""}{r.reviewedAt ? ` on ${shortDate(r.reviewedAt)}` : ""}
+                        </p>
+                        {r.reason && <p className="mt-1">Reason: {r.reason}</p>}
+                        <button onClick={() => setViewing(r)} className="mt-1 inline-flex min-h-11 items-center gap-1.5 font-medium underline md:min-h-0"><FileText className="h-4 w-4" aria-hidden/> View {r.documentName ?? "document"}</button>
+                      </div>
+                      <Button variant="outline" onClick={() => undo.mutate(r)} disabled={undo.isPending}>Undo</Button>
+                    </li>))}
+                </ul>)}
+            </TabsContent>
           </Tabs>)}
       </div>
 
