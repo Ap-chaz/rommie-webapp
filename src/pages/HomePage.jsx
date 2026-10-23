@@ -48,7 +48,7 @@ function Row({ title, search, items, loading }) {
         </div>
       </div>
       <div ref={ref} className="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 md:mx-0 md:scroll-px-0 md:px-0">
-        {(loading ? Array.from({ length: 6 }) : items).map((r, i) => (<div key={i} className="w-[72%] shrink-0 snap-start sm:w-[40%] md:w-[calc((100%-36px)/4)] xl:w-[calc((100%-48px)/5)]">
+        {(loading ? Array.from({ length: 6 }) : items).map((r, i) => (<div key={i} className="flex w-[72%] shrink-0 snap-start sm:w-[40%] md:w-[calc((100%-36px)/4)] xl:w-[calc((100%-48px)/5)]">
             {loading ? <RoomCardSkeleton /> : <RoomCard room={r}/>}
           </div>))}
       </div>

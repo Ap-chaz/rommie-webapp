@@ -3,7 +3,6 @@ import { Link } from "@/lib/router";
 import { Bus, Footprints, Heart, MessageCircle, ShieldCheck } from "lucide-react";
 import { useSaved } from "@/lib/saved";
 import { daysSince, trackContact } from "@/services/api";
-import { HostelChips } from "@/components/HostelFacts";
 import { daysAgoLabel, formatKes, nearestCampus, roomTypeLabel, STALE_DAYS, whatsappLink } from "@/lib/format";
 import { cn } from "@/lib/utils";
 export function StatusLine({ room }) {
@@ -40,8 +39,8 @@ export function RoomCard({ room }) {
     const taken = room.status === "Taken";
     const distance = nearestCampus(room);
     const DistanceIcon = distance.includes("matatu") ? Bus : Footprints;
-    return (<article className="group @container relative w-full overflow-hidden rounded-lg border border-bebe bg-card">
-      <div className="relative aspect-[4/3] overflow-hidden bg-deco">
+    return (<article className="group @container relative flex h-full w-full flex-col overflow-hidden rounded-lg border border-bebe bg-card">
+      <div className="relative aspect-[3/2] overflow-hidden bg-deco">
         <Link to="/rooms/$id" params={{ id: room.id }} aria-label={room.title}>
           <div className="flex h-full transition-transform duration-300" style={{ transform: `translateX(-${idx * 100}%)` }}>
             {room.photos.map((p, i) => (<img key={i} src={p} alt={`${room.title}, photo ${i + 1}`} loading="lazy" width={816} height={612} className={cn("h-full w-full shrink-0 object-cover", taken && "opacity-70")}/>))}
@@ -66,8 +65,8 @@ export function RoomCard({ room }) {
           </span>
         </div>
       </div>
-      <div className="space-y-1.5 p-3">
-        <Link to="/rooms/$id" params={{ id: room.id }} className="block space-y-0.5">
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        <Link to="/rooms/$id" params={{ id: room.id }} className="block">
           <h3 className="truncate font-medium">{room.title}</h3>
           <p className="truncate text-foggy">{room.area} · {roomTypeLabel[room.roomType]}{room.gender ? ` · ${room.gender === "Mixed" ? "Ladies & gents" : room.gender}` : ""}</p>
           <p className="flex items-start gap-1.5 leading-snug text-foggy">
@@ -75,12 +74,10 @@ export function RoomCard({ room }) {
             <span>{distance}</span>
           </p>
         </Link>
-        {room.roomType === "hostel" && <HostelChips room={room}/>}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <StatusChip room={room}/>
-          <span className="text-xs text-foggy">Trust {room.caretaker.trustScore}</span>
         </div>
-        {!taken && (<a href={whatsappLink(room)} target="_blank" rel="noreferrer" onClick={() => trackContact(room.id, "whatsapp")} className="flex h-9 items-center justify-center gap-1.5 rounded-lg border border-hof text-sm font-medium hover:bg-faint">
+        {!taken && (<a href={whatsappLink(room)} target="_blank" rel="noreferrer" onClick={() => trackContact(room.id, "whatsapp")} className="mt-auto flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-hof text-sm font-medium hover:bg-faint">
             <MessageCircle className="h-4 w-4" aria-hidden/> WhatsApp
           </a>)}
       </div>
@@ -88,7 +85,7 @@ export function RoomCard({ room }) {
 }
 export function RoomCardSkeleton() {
     return (<div className="w-full animate-pulse overflow-hidden rounded-lg border border-bebe bg-card">
-      <div className="aspect-[4/3] bg-deco"/>
+      <div className="aspect-[3/2] bg-deco"/>
       <div className="space-y-2 p-3">
         <div className="h-3.5 w-3/4 rounded bg-deco"/>
         <div className="h-3.5 w-1/2 rounded bg-deco"/>
