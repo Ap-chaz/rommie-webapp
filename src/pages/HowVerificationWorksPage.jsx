@@ -1,6 +1,6 @@
 import { usePageMeta } from "@/lib/usePageMeta";
 import { Link } from "@/lib/router";
-import { BadgeCheck, Clock, Flag, GraduationCap, ShieldCheck } from "lucide-react";
+import { BadgeCheck, Clock, Flag, ShieldCheck } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { TRUST_MAX } from "@/lib/trust";
 import { STALE_DAYS } from "@/lib/format";
@@ -25,16 +25,11 @@ export default function HowItWorks() {
 
       <section className="mt-10">
         <h2 className="text-section mb-4">What gets verified</h2>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3">
           <div className="rounded-xl bg-card p-5">
             <BadgeCheck className="h-6 w-6" strokeWidth={1.5} aria-hidden/>
             <h3 className="mt-3 text-base font-medium">Verified Caretaker or Landlord</h3>
             <p className="mt-1 text-foggy">The caretaker uploads a national ID or passport and our team reviews it. A Verified pill then shows on all their rooms and a profile badge.</p>
-          </div>
-          <div className="rounded-xl bg-card p-5">
-            <GraduationCap className="h-6 w-6" strokeWidth={1.5} aria-hidden/>
-            <h3 className="mt-3 text-base font-medium">Verified Student</h3>
-            <p className="mt-1 text-foggy">Students upload a student ID or admission letter. The badge shows caretakers you're a real student. It's optional.</p>
           </div>
         </div>
       </section>
@@ -93,7 +88,7 @@ export default function HowItWorks() {
               <AccordionContent className="text-foggy">{f.a}</AccordionContent>
             </AccordionItem>))}
         </Accordion>
-        <p className="mt-6 text-foggy">Ready? <Link to="/verify-student" className="font-medium text-hof underline">Verify as a student</Link> or <Link to="/caretaker/profile" className="font-medium text-hof underline">get verified as a caretaker</Link>.</p>
+        <p className="mt-6 text-foggy">Ready? <Link to="/caretaker/profile" className="font-medium text-hof underline">Get verified as a caretaker</Link>.</p>
       </section>
     </div>);
 }

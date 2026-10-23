@@ -35,7 +35,6 @@ export const routes = [
           { path: "verify-phone", ...page(() => import("@/pages/VerifyPhonePage")) },
           { path: "saved", ...page(() => import("@/pages/SavedPage")) },
           { path: "alerts", ...page(() => import("@/pages/AlertsPage")) },
-          { path: "verify-student", ...page(() => import("@/pages/VerifyStudentPage")) },
           { path: "report", ...page(() => import("@/pages/ReportPage")) },
           { path: "zones", ...page(() => import("@/pages/ZonesPage")) },
           { path: "safety-tips", ...page(() => import("@/pages/SafetyTipsPage")) },

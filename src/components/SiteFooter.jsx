@@ -14,7 +14,6 @@ function colsFor(me) {
             { to: "/login", l: "Log in" },
             { to: "/saved", l: "Saved rooms" },
             { to: "/alerts", l: "Vacancy alerts" },
-            { to: "/verify-student", l: "Verify your student ID" },
         ]
         : me.role === "admin"
             ? [{ to: "/admin", l: "Dashboard" }, { to: "/admin/verification", l: "Verification queue" }, { l: "Log out", logout: true }]
@@ -23,7 +22,6 @@ function colsFor(me) {
                 : [
                     { to: "/saved", l: "Saved rooms" },
                     { to: "/alerts", l: "Vacancy alerts" },
-                    { to: "/verify-student", l: "Verify your student ID" },
                     { l: "Log out", logout: true },
                 ];
     const caretakers = !me

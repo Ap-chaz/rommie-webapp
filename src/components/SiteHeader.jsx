@@ -35,7 +35,6 @@ function menuFor(user) {
     return [
         { label: "Saved Rooms", to: "/saved" },
         { label: "My Alerts", to: "/alerts" },
-        { label: "Verify Student ID", to: "/verify-student" },
     ];
 }
 function Avatar({ user }) {
@@ -116,12 +115,12 @@ export function SiteHeader() {
         </div>
       </header>
 
-      <nav aria-label="Mobile" className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-start justify-around border-t border-bebe bg-card pt-2 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] lg:hidden">
+      <nav aria-label="Mobile" className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] items-start justify-around border-t border-bebe bg-card pt-2 pb-[env(safe-area-inset-bottom)] short-landscape:items-center short-landscape:pt-0 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] lg:hidden">
         {mobileTabs(me).map((t) => {
             const active = t.to ? (t.to === "/admin" ? path === t.to : path.startsWith(t.to)) : sheet;
-            const cls = cn("flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1 text-[11px]", active ? "text-hof" : "text-foggy");
+            const cls = cn("flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-1 text-[11px] short-landscape:flex-row short-landscape:gap-2 short-landscape:text-xs", active ? "text-hof" : "text-foggy");
             return t.to ? (<Link key={t.label} to={t.to} className={cls}>
-              <t.icon className="h-6 w-6" strokeWidth={1.5}/>
+              <t.icon className="h-6 w-6 short-landscape:h-5 short-landscape:w-5" strokeWidth={1.5}/>
               {t.label}
             </Link>) : (<button key={t.label} onClick={() => setSheet(true)} className={cls}>
               {me ? <Avatar user={me}/> : <t.icon className="h-6 w-6" strokeWidth={1.5}/>}

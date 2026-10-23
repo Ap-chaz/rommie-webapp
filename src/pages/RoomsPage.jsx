@@ -146,5 +146,5 @@ export default function RoomsPage() {
     </div>);
 }
 function Grid({ children, className }) {
-    return <div className={cn("grid grid-cols-1 gap-x-3 gap-y-8 min-[500px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4", className)}>{children}</div>;
+    return <div className={cn("grid grid-cols-1 gap-x-3 gap-y-8 min-[500px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4", className)}>{children}</div>;
 }

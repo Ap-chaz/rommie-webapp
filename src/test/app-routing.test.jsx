@@ -23,7 +23,7 @@ describe("App routing", () => {
   });
 
   it.each([
-    "/rooms", "/saved", "/alerts", "/verify-student", "/report", "/zones", "/safety-tips",
+    "/rooms", "/saved", "/alerts", "/report", "/zones", "/safety-tips",
     "/for-caretakers", "/how-verification-works", "/privacy", "/terms", "/caretaker/profile",
     "/admin", "/admin/verification",
   ])("%s has a page", (p) => {

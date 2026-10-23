@@ -48,7 +48,7 @@ function Row({ title, search, items, loading }) {
         </div>
       </div>
       <div ref={ref} className="no-scrollbar -mx-4 flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 md:mx-0 md:scroll-px-0 md:px-0">
-        {(loading ? Array.from({ length: 6 }) : items).map((r, i) => (<div key={i} className="flex w-[72%] shrink-0 snap-start sm:w-[40%] md:w-[calc((100%-36px)/4)] xl:w-[calc((100%-48px)/5)]">
+        {(loading ? Array.from({ length: 6 }) : items).map((r, i) => (<div key={i} className="flex w-[72%] shrink-0 snap-start sm:w-[40%] md:w-[calc((100%-24px)/3)] lg:w-[calc((100%-36px)/4)] xl:w-[calc((100%-48px)/5)]">
             {loading ? <RoomCardSkeleton /> : <RoomCard room={r}/>}
           </div>))}
       </div>
@@ -60,7 +60,7 @@ export default function Home() {
     return (<div className="page-container space-y-12 py-8">
       <div className="space-y-8">
         <SearchCapsule />
-        <div className="no-scrollbar -mx-4 flex gap-8 overflow-x-auto px-4 lg:justify-center">
+        <div className="no-scrollbar -mx-4 flex gap-8 overflow-x-auto px-4 md:mx-0 md:px-0 [&>:first-child]:ml-auto [&>:last-child]:mr-auto">
           {categories.map((c) => (<Link key={c.label} to="/rooms" search={c.search} className="flex min-w-16 shrink-0 flex-col items-center gap-2 border-b-2 border-transparent pb-2 text-foggy transition-colors hover:border-deco hover:text-hof">
               <c.icon className="h-6 w-6" strokeWidth={1.5}/>
               <span className="whitespace-nowrap text-xs font-medium">{c.label}</span>

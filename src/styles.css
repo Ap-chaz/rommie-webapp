@@ -3,6 +3,8 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+/* Phones held sideways: very little vertical space, so bars get slimmer. */
+@custom-variant short-landscape (@media (max-height: 480px) and (orientation: landscape));
 
 /*
  * Design system definition.
@@ -118,12 +120,14 @@
     /* Height of the fixed top bar (excluding the notch inset). Phones < 768px, tablets/desktop >= 768px,
        and a slimmer bar on landscape phones where vertical space is scarce. */
     --header-h: 64px;
+    /* Height of the fixed bottom tab bar (excluding the home-indicator inset); shown below 1024px. */
+    --bottom-nav-h: 64px;
   }
   @media (width >= 768px) {
     :root { --header-h: 80px; }
   }
   @media (max-height: 480px) and (orientation: landscape) and (width < 1024px) {
-    :root { --header-h: 56px; }
+    :root { --header-h: 52px; --bottom-nav-h: 44px; }
   }
 
   * {
