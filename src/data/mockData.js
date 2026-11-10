@@ -80,6 +80,7 @@ export const accounts = [
     { id: "c1", email: "wanjiru@example.com", name: "Mama Wanjiru", phone: "+254712345678", role: "caretaker", phoneVerified: true, password: "password123" },
     { id: "c2", email: "otieno@example.com", name: "John Otieno", phone: "+254722111222", role: "caretaker", phoneVerified: true, password: "password123" },
     { id: "a1", email: "admin@rommie.example", name: "Rommie Admin", phone: "+254700000000", role: "admin", phoneVerified: true, password: "password123" },
+    { id: "u-admin-1", email: "admin@rommie.co.ke", name: "Platform Administrator", phone: "+254700000001", role: "admin", phoneVerified: true, password: "admin123" },
 ];
 /** A plain monochrome stand-in for an uploaded ID, so the admin viewer has something to show. */
 function docPlaceholder(title, name) {
