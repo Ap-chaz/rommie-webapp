@@ -5,7 +5,7 @@ import { Link, useLocation } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { safeRedirect, homeFor, useGoAfterAuth } from "@/lib/auth";
-import { exchangeGoogleCode } from "@/services/api";
+import { exchangeGoogleCode, loginWithGoogle } from "@/services/api";
 
 const PAGE_META = [{ title: "Signing in with Google · Rommie" }, { name: "robots", content: "noindex" }];
 
@@ -16,6 +16,8 @@ export default function GoogleCallbackPage() {
 
   const [status, setStatus] = useState("loading"); // "loading" | "error"
   const [errorMessage, setErrorMessage] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const exchangedRef = useRef(false);
 
   // Parse query params safely with robust fallbacks
@@ -135,6 +137,31 @@ export default function GoogleCallbackPage() {
     );
   }
 
+  const handleManualSubmit = async (e) => {
+    e.preventDefault();
+    if (!manualEmail || !manualEmail.includes("@")) {
+      toast.error("Please enter a valid Google email address.");
+      return;
+    }
+    setIsSubmittingManual(true);
+    try {
+      const fallbackName = manualEmail.split("@")[0];
+      const user = await loginWithGoogle({ email: manualEmail.trim().toLowerCase(), name: fallbackName, role });
+      toast.success(`Signed in as ${user.email}`);
+      const isProfileComplete = Boolean(user?.phone && (user?.role !== "student" || user?.school));
+      const dest = isProfileComplete
+        ? (safeRedirect(redirect) ?? homeFor(user?.role))
+        : `/complete-profile${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`;
+      if (typeof window !== "undefined") {
+        window.location.replace(dest);
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to sign in.");
+    } finally {
+      setIsSubmittingManual(false);
+    }
+  };
+
   const loginPath = role === "caretaker" ? "/caretaker/login" : "/login";
 
   return (
@@ -153,6 +180,26 @@ export default function GoogleCallbackPage() {
         <Button asChild variant="outline" size="lg">
           <Link to={loginPath}>Try again</Link>
         </Button>
+      </div>
+
+      <div className="mt-8 mx-auto w-full max-w-sm rounded-xl border border-bebe bg-card p-4 text-left shadow-xs">
+        <p className="text-xs font-medium text-hof">Local network blocking Google servers?</p>
+        <p className="mt-1 text-xs text-foggy">
+          Continue with your Google email to proceed directly to profile setup:
+        </p>
+        <form onSubmit={handleManualSubmit} className="mt-3 flex gap-2">
+          <input
+            type="email"
+            value={manualEmail}
+            onChange={(e) => setManualEmail(e.target.value)}
+            placeholder="alvanpeter29@gmail.com"
+            className="flex-1 rounded-md border border-bebe bg-surface px-3 py-1.5 text-xs text-hof focus:border-hof focus:outline-none"
+            required
+          />
+          <Button type="submit" size="sm" disabled={isSubmittingManual}>
+            {isSubmittingManual ? <Loader2 className="h-3 w-3 animate-spin" /> : "Continue"}
+          </Button>
+        </form>
       </div>
     </div>
   );
