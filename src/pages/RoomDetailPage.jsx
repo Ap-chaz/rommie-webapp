@@ -237,13 +237,13 @@ export default function RoomDetailPage() {
           <section className="py-6">
             <h2 className="text-section mb-4">Your caretaker</h2>
             <div className="flex items-center gap-3 rounded-xl bg-card p-4 sm:gap-4 sm:p-5">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-hof text-xl font-semibold text-primary-foreground">{room.caretaker.name[0]}</div>
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-hof text-xl font-semibold text-primary-foreground">{(room.caretaker?.name || "Caretaker")[0]}</div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-medium">{room.caretaker.name}</p>
-                {room.caretaker.verified ? (<p className="flex items-center gap-1 text-sm"><BadgeCheck className="h-4 w-4"/> Verified Caretaker</p>) : <p className="text-sm text-foggy">Not verified yet</p>}
+                <p className="truncate text-base font-medium">{room.caretaker?.name || "Caretaker"}</p>
+                {room.caretaker?.verified ? (<p className="flex items-center gap-1 text-sm"><BadgeCheck className="h-4 w-4"/> Verified Caretaker</p>) : <p className="text-sm text-foggy">Not verified yet</p>}
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-section">{room.caretaker.trustScore}</p>
+                <p className="text-section">{room.caretaker?.trustScore ?? 50}</p>
                 <p className="text-xs text-foggy">Trust score</p>
               </div>
             </div>

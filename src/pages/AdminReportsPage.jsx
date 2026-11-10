@@ -57,7 +57,7 @@ function Reports() {
           {r.room ? (<p className="mt-2 text-base font-medium">
               <Link to="/rooms/$id" params={{ id: r.room.id }} className="hover:underline">{r.room.title}</Link>
             </p>) : <p className="mt-2 text-base font-medium">Listing no longer exists</p>}
-          {r.room && (<p className="text-foggy">{r.room.area} · {roomTypeLabel[r.room.roomType]} · {r.room.caretaker.name}{r.room.hidden ? " · Hidden" : ""}</p>)}
+          {r.room && (<p className="text-foggy">{r.room.area} · {roomTypeLabel[r.room.roomType]} · {r.room.caretaker?.name || "Caretaker"}{r.room.hidden ? " · Hidden" : ""}</p>)}
         </div>
         {withActions && r.openOnRoom > 1 && (<span className="flex items-center gap-1.5 text-sm font-medium"><Flag className="h-4 w-4" aria-hidden/> {r.openOnRoom} open reports on this listing</span>)}
       </div>
@@ -86,7 +86,7 @@ function Reports() {
         <AlertDialogContent className="rounded-xl border-0 shadow-modal">
           <AlertDialogHeader>
             <AlertDialogTitle>Hide this listing?</AlertDialogTitle>
-            <AlertDialogDescription>“{toHide?.room?.title}” will disappear from search and room pages, and every open report about it will be closed. {toHide?.room?.caretaker.name} will still see it in My Listings.</AlertDialogDescription>
+            <AlertDialogDescription>“{toHide?.room?.title}” will disappear from search and room pages, and every open report about it will be closed. {toHide?.room?.caretaker?.name || "The caretaker"} will still see it in My Listings.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep visible</AlertDialogCancel>

@@ -55,7 +55,7 @@ export function RoomCard({ room }) {
             </button>))}
         </div>
         <div className="pointer-events-none absolute inset-x-2 bottom-2 flex items-center justify-between gap-2">
-          {room.caretaker.verified ? (<span className="flex min-w-0 items-center gap-1 rounded-md bg-card px-1.5 py-1 text-xs font-semibold shadow-search @min-[14rem]:px-2">
+          {room.caretaker?.verified ? (<span className="flex min-w-0 items-center gap-1 rounded-md bg-card px-1.5 py-1 text-xs font-semibold shadow-search @min-[14rem]:px-2">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden/>
               <span className="hidden @min-[14rem]:inline">Verified</span>
               <span className="sr-only @min-[14rem]:hidden">Verified</span>

@@ -95,7 +95,7 @@ function Dashboard() {
                         <Link to="/rooms/$id" params={{ id: r.id }} className="hover:underline">{r.title}</Link>
                       </TableCell>
                       <TableCell>{r.area}</TableCell>
-                      <TableCell>{r.caretaker.name}</TableCell>
+                      <TableCell>{r.caretaker?.name || "Caretaker"}</TableCell>
                       <TableCell className="whitespace-nowrap">{daysSince(r.lastConfirmedVacantAt)} days ago <span className="text-foggy">({shortDate(r.lastConfirmedVacantAt)})</span></TableCell>
                       <TableCell className="text-right">
                         <Button variant="outline" size="sm" className="h-9" onClick={() => setToHide(r)} aria-label={`Hide ${r.title}`}>Hide</Button>
@@ -111,7 +111,7 @@ function Dashboard() {
               {hiddenQ.data.map((r) => (<li key={r.id} className="flex flex-col gap-3 rounded-xl bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <Link to="/rooms/$id" params={{ id: r.id }} className="block truncate font-medium hover:underline">{r.title}</Link>
-                    <p className="text-foggy">{r.area} · {r.caretaker.name} · last confirmed {shortDate(r.lastConfirmedVacantAt)}</p>
+                    <p className="text-foggy">{r.area} · {r.caretaker?.name || "Caretaker"} · last confirmed {shortDate(r.lastConfirmedVacantAt)}</p>
                   </div>
                   <Button variant="outline" className="shrink-0" disabled={restore.isPending} onClick={() => restore.mutate(r)} aria-label={`Restore ${r.title}`}>Restore</Button>
                 </li>))}
@@ -122,7 +122,7 @@ function Dashboard() {
         <AlertDialogContent className="rounded-xl border-0 shadow-modal">
           <AlertDialogHeader>
             <AlertDialogTitle>Hide this listing?</AlertDialogTitle>
-            <AlertDialogDescription>“{toHide?.title}” will disappear from search and room pages. {toHide?.caretaker.name} will still see it in My Listings.</AlertDialogDescription>
+            <AlertDialogDescription>“{toHide?.title}” will disappear from search and room pages. {toHide?.caretaker?.name || "The caretaker"} will still see it in My Listings.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep visible</AlertDialogCancel>

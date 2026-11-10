@@ -1,4 +1,5 @@
 import { db } from '../db/db.js';
+import { enrichRoom } from '../services/rooms.service.js';
 
 export default async function (fastify, opts) {
   // All admin endpoints require authentication AND admin role
@@ -133,7 +134,16 @@ export default async function (fastify, opts) {
 
   // GET /api/v1/admin/listings
   fastify.get('/listings', async (request, reply) => {
-    const listings = await db.queryRooms({ includeHidden: true });
+    const rawListings = await db.queryRooms({ includeHidden: true });
+    const listings = await Promise.all(
+      rawListings.map(async (r) => {
+        const enriched = await enrichRoom(r);
+        return {
+          ...enriched,
+          contactCount: 0
+        };
+      })
+    );
     return reply.status(200).send({ data: listings });
   });
 
@@ -366,7 +376,23 @@ export default async function (fastify, opts) {
   // GET /api/v1/admin/reports
   fastify.get('/reports', async (request, reply) => {
     const status = request.query?.status;
-    const reports = await db.listReports(status);
+    const rawReports = await db.listReports(status);
+    const reports = await Promise.all(
+      rawReports.map(async (rep) => {
+        let room = null;
+        if (rep.roomId) {
+          const rawRoom = await db.findRoomById(rep.roomId);
+          if (rawRoom) {
+            room = await enrichRoom(rawRoom);
+          }
+        }
+        return {
+          ...rep,
+          room,
+          openOnRoom: 1
+        };
+      })
+    );
     return reply.status(200).send({ data: reports });
   });
 

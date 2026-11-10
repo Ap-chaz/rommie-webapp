@@ -102,7 +102,7 @@ function Listings() {
                 {filtered.slice(0, shown).map((r) => (<TableRow key={r.id}>
                     <TableCell className="max-w-[320px]">
                       <div className="flex items-center gap-3">
-                        <img src={r.photos[0]} alt="" loading="lazy" className="h-12 w-14 shrink-0 rounded-lg bg-deco object-cover"/>
+                        <img src={r.photos?.[0] || ""} alt="" loading="lazy" className="h-12 w-14 shrink-0 rounded-lg bg-deco object-cover"/>
                         <div className="min-w-0">
                           <Link to="/rooms/$id" params={{ id: r.id }} className="block truncate font-medium hover:underline">{r.title}</Link>
                           <p className="truncate text-foggy">{r.area} · {roomTypeLabel[r.roomType]}</p>
@@ -117,8 +117,8 @@ function Listings() {
                         {isStale(r) && <Pill>Stale</Pill>}
                       </div>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap" title="WhatsApp and Call taps">{r.contactCount}</TableCell>
-                    <TableCell className="max-w-[160px] truncate">{r.caretaker.name}</TableCell>
+                    <TableCell className="whitespace-nowrap" title="WhatsApp and Call taps">{r.contactCount ?? 0}</TableCell>
+                    <TableCell className="max-w-[160px] truncate">{r.caretaker?.name || "Caretaker"}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1.5">
                         <Button variant="outline" size="sm" className="h-9" onClick={() => setEditing(r)} aria-label={`Edit ${r.title}`}>Edit</Button>

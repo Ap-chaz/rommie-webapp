@@ -1061,11 +1061,29 @@ export async function adminUpdateListing(id, data) {
     }
     if (changes.length === 0)
         return;
+    try {
+        await fetch(`/api/v1/admin/listings/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader()
+            },
+            credentials: "include",
+            body: JSON.stringify(patch)
+        });
+    } catch {}
     rooms = rooms.map((r) => (r.id === id ? { ...r, ...patch } : r));
     logAction("listing.edited", `Edited "${room.title}": ${changes.join(", ")}`, { roomId: id });
 }
 /** Remove a listing for good (spam, duplicates). Open reports about it are closed. */
 export async function adminDeleteListing(id) {
+    try {
+        await fetch(`/api/v1/admin/listings/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+    } catch {}
     await delay(300);
     const admin = requireAdmin();
     const room = rooms.find((r) => r.id === id);
