@@ -91,16 +91,24 @@ export default function GoogleCallbackPage() {
         const firstName = user?.name ? user.name.split(" ")[0] : "there";
         toast.success(`Welcome, ${firstName}!`);
 
-        const dest = safeRedirect(redirect) ?? homeFor(user?.role);
-        goAfter(user, redirect);
+        const isProfileComplete = Boolean(user?.phone && (user?.role !== "student" || user?.school));
+        const dest = isProfileComplete
+          ? (safeRedirect(redirect) ?? homeFor(user?.role))
+          : `/complete-profile${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`;
 
-        // Fallback: in case client-side router navigation is delayed or needs a hard transition
-        if (typeof window !== "undefined") {
-          setTimeout(() => {
-            if (window.location.pathname.includes("/auth/google/callback")) {
-              window.location.replace(dest);
-            }
-          }, 600);
+        if (!isProfileComplete) {
+          if (typeof window !== "undefined") {
+            window.location.replace(dest);
+          }
+        } else {
+          goAfter(user, redirect);
+          if (typeof window !== "undefined") {
+            setTimeout(() => {
+              if (window.location.pathname.includes("/auth/google/callback")) {
+                window.location.replace(dest);
+              }
+            }, 600);
+          }
         }
       } catch (err) {
         setStatus("error");

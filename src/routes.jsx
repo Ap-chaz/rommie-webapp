@@ -33,6 +33,7 @@ export const routes = [
           { path: "login", ...page(() => import("@/pages/LoginPage")) },
           { path: "auth/google/callback", ...page(() => import("@/pages/GoogleCallbackPage")) },
           { path: "signup", ...page(() => import("@/pages/SignupPage")) },
+          { path: "complete-profile", ...page(() => import("@/pages/CompleteProfilePage")) },
           { path: "verify-email", ...page(() => import("@/pages/VerifyEmailPage")) },
           { path: "verify-phone", ...page(() => import("@/pages/VerifyPhonePage")) },
           { path: "saved", ...page(() => import("@/pages/SavedPage")) },

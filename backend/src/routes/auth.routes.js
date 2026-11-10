@@ -156,4 +156,25 @@ export default async function authRoutes(fastify, opts) {
     const user = await authService.updatePhone(request.user.id, request.body?.phone);
     reply.status(200).send({ ...user, user });
   });
+
+  // 10. Update Profile (Google onboarding completion)
+  fastify.patch('/profile', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { user, token } = await authService.updateProfile(
+      request.user.id,
+      request.body || {},
+      (payload) => fastify.jwt.sign(payload)
+    );
+
+    if (token) {
+      reply.setCookie('rommie_token', token, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: config.nodeEnv === 'production',
+        maxAge: 7 * 24 * 60 * 60
+      });
+    }
+
+    reply.status(200).send({ user, token });
+  });
 }

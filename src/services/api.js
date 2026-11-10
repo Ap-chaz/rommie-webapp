@@ -237,10 +237,15 @@ const savedKey = (userId) => `rommie.saved.${userId}`;
 const readSaved = (userId) => store.get(savedKey(userId), []);
 /** Ids of the signed-in person's saved rooms, newest first. Empty for visitors. */
 export async function getSavedIds() {
+    const authHeader = getAuthHeader();
+    if (!authHeader.Authorization) {
+        const u = getSession();
+        return u ? readSaved(u.id) : [];
+    }
     let networkAttempted = false;
     try {
         const res = await fetch("/api/v1/saved", {
-            headers: getAuthHeader(),
+            headers: authHeader,
             credentials: "include"
         });
         networkAttempted = true;
@@ -1611,6 +1616,47 @@ export async function setMyPhone(phone) {
     if (c)
         c.phone = phone;
     setSession({ ...u, phone, phoneVerified: false });
+}
+/** Update user profile (phone, school, role, name) during onboarding or profile editing */
+export async function updateProfile(data) {
+    try {
+        const res = await fetch('/api/v1/auth/profile', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeader()
+            },
+            body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (res.ok) {
+            const updatedUser = json.user || json;
+            if (json.token) {
+                store.set('rommie.token', json.token);
+            }
+            setSession(updatedUser);
+            return updatedUser;
+        }
+        throw new AuthError(json.error?.message || 'Failed to update profile.', json.error?.field || 'phone');
+    } catch (err) {
+        if (err instanceof AuthError) throw err;
+    }
+    // Fallback for mock / offline
+    await delay(300);
+    const u = getSession();
+    if (!u) throw new AuthError('You must be signed in to update your profile.');
+    const updated = {
+        ...u,
+        ...data,
+        name: data.name || (data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : u.name),
+        profileComplete: true
+    };
+    const acct = accounts.find((a) => a.id === u.id);
+    if (acct) {
+        Object.assign(acct, updated);
+    }
+    setSession(updated);
+    return updated;
 }
 /** Log in with a one-time code instead of a password (call sendOtp first). */
 export async function loginWithOtp(phone, code) {

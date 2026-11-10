@@ -301,6 +301,10 @@ export class Database {
         if (updates.email !== undefined) { fields.push(`email = $${idx++}`); values.push(updates.email.trim().toLowerCase()); }
         if (updates.phone !== undefined) { fields.push(`phone = $${idx++}`); values.push(updates.phone); }
         if (updates.name !== undefined) { fields.push(`name = $${idx++}`); values.push(updates.name); }
+        if (updates.firstName !== undefined) { fields.push(`first_name = $${idx++}`); values.push(updates.firstName); }
+        if (updates.lastName !== undefined) { fields.push(`last_name = $${idx++}`); values.push(updates.lastName); }
+        if (updates.school !== undefined) { fields.push(`school = $${idx++}`); values.push(updates.school); }
+        if (updates.role !== undefined) { fields.push(`role = $${idx++}`); values.push(updates.role); }
         if (updates.passwordHash !== undefined) { fields.push(`password_hash = $${idx++}`); values.push(updates.passwordHash); }
         if (updates.emailVerified !== undefined) { fields.push(`email_verified = $${idx++}`); values.push(Boolean(updates.emailVerified)); }
         if (updates.isGoogle !== undefined) { fields.push(`is_google = $${idx++}`); values.push(Boolean(updates.isGoogle)); }

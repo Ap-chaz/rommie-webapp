@@ -25,8 +25,11 @@ export function LoginForm({ role, redirect }) {
         const firstName = user?.name ? user.name.split(" ")[0] : "there";
         toast.success(`Welcome back, ${firstName}`);
         const isVerified = Boolean(user.emailVerified ?? user.phoneVerified);
+        const isProfileComplete = Boolean(user.phone && (user.role !== "student" || user.school));
         if (!isVerified)
             void navigate({ to: "/verify-email", search: redirect ? { redirect } : {} });
+        else if (!isProfileComplete)
+            void navigate({ to: "/complete-profile", search: redirect ? { redirect } : {} });
         else
             goAfter(user, redirect);
     };

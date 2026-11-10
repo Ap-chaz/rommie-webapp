@@ -626,6 +626,98 @@ export class AuthService {
 
     return sanitizeUser(updated);
   }
+
+  async updateProfile(userId, data = {}, jwtSigner = null) {
+    const user = await this.db.findUserById(userId);
+    if (!user) {
+      throw new ServiceError('User not found.', {
+        statusCode: 404,
+        code: 'NOT_FOUND'
+      });
+    }
+
+    const updates = {};
+
+    if (data.role && (data.role === 'student' || data.role === 'caretaker')) {
+      updates.role = data.role;
+    }
+
+    if (data.phone) {
+      const trimmedPhone = String(data.phone).trim();
+      if (trimmedPhone.length < 9) {
+        throw new ServiceError('Enter a valid phone number.', {
+          statusCode: 400,
+          code: 'BAD_REQUEST',
+          field: 'phone'
+        });
+      }
+      const existing = await this.db.findUserByPhone(trimmedPhone);
+      if (existing && existing.id !== userId) {
+        throw new ServiceError('An account with this phone number already exists.', {
+          statusCode: 409,
+          code: 'PHONE_EXISTS',
+          field: 'phone'
+        });
+      }
+      updates.phone = trimmedPhone;
+    }
+
+    if (data.school !== undefined) {
+      updates.school = String(data.school || '').trim();
+    }
+
+    if (data.name && data.name.trim().length >= 2) {
+      updates.name = data.name.trim();
+      const parts = updates.name.split(' ');
+      updates.firstName = parts[0] || '';
+      updates.lastName = parts.slice(1).join(' ') || '';
+    } else if (data.firstName || data.lastName) {
+      const fn = data.firstName ? data.firstName.trim() : user.firstName || '';
+      const ln = data.lastName ? data.lastName.trim() : user.lastName || '';
+      updates.firstName = fn;
+      updates.lastName = ln;
+      updates.name = `${fn} ${ln}`.trim();
+    }
+
+    const updated = await this.db.updateUser(userId, updates);
+
+    const effectiveRole = updates.role || updated.role;
+    if (effectiveRole === 'caretaker') {
+      const existingCaretaker = await this.db.findCaretakerById(userId);
+      if (existingCaretaker) {
+        await this.db.updateCaretaker(userId, {
+          name: updated.name,
+          phone: updated.phone || existingCaretaker.phone
+        });
+      } else {
+        await this.db.createCaretaker({
+          id: userId,
+          name: updated.name,
+          phone: updated.phone || '',
+          isVerified: false,
+          isSuspended: false
+        });
+      }
+    }
+
+    const safeUser = {
+      ...sanitizeUser(updated),
+      profileComplete: Boolean(updated.phone && (updated.role !== 'student' || updated.school))
+    };
+
+    const token = jwtSigner
+      ? jwtSigner({
+          sub: updated.id,
+          id: updated.id,
+          email: updated.email,
+          name: updated.name,
+          role: updated.role,
+          emailVerified: Boolean(updated.emailVerified)
+        })
+      : null;
+
+    return { user: safeUser, token };
+  }
 }
 
 export const authService = new AuthService();
