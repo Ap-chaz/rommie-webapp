@@ -150,14 +150,8 @@ export default function GoogleCallbackPage() {
         <Button asChild size="lg">
           <Link to={loginPath}>Return to log in</Link>
         </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={() => {
-            if (typeof window !== "undefined") window.location.reload();
-          }}
-        >
-          Try again
+        <Button asChild variant="outline" size="lg">
+          <Link to={loginPath}>Try again</Link>
         </Button>
       </div>
     </div>

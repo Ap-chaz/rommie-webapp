@@ -1,5 +1,10 @@
+import dns from 'node:dns';
 import { buildApp } from './app.js';
 import { config } from './config.js';
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 
 async function main() {
   const app = await buildApp({ logger: true });

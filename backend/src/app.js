@@ -1,3 +1,4 @@
+import dns from 'node:dns';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
@@ -5,6 +6,10 @@ import rateLimit from '@fastify/rate-limit';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 
 import { config } from './config.js';
 import { db } from './db/db.js';

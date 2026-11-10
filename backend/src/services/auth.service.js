@@ -1,7 +1,12 @@
+import dns from 'node:dns';
 import bcrypt from 'bcryptjs';
 import { db } from '../db/db.js';
 import { emailService } from './email.service.js';
 import { config } from '../config.js';
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {}
 
 export class ServiceError extends Error {
   constructor(message, { statusCode = 400, code = 'BAD_REQUEST', field = null, details = [] } = {}) {
@@ -326,16 +331,23 @@ export class AuthService {
           }
         }
       } catch (err) {
+        console.error('[Google OAuth Token Error]:', err?.message, err?.cause);
         if (config.nodeEnv === 'test' || code.startsWith('test_')) {
           email = 'oauth.test.user@gmail.com';
           name = 'OAuth Test User';
           firstName = 'OAuth';
           lastName = 'Test User';
         } else {
-          throw new ServiceError(err.message || 'Google authentication failed.', {
-            statusCode: 400,
-            code: 'GOOGLE_AUTH_FAILED'
-          });
+          const detail = err?.cause?.code || err?.cause?.message || err?.message || 'Network error';
+          throw new ServiceError(
+            err.message === 'fetch failed'
+              ? `Could not connect to Google authentication servers (${detail}). Check your internet connection or firewall.`
+              : (err.message || 'Google authentication failed.'),
+            {
+              statusCode: 400,
+              code: 'GOOGLE_AUTH_FAILED'
+            }
+          );
         }
       }
     }
