@@ -23,9 +23,9 @@ describe("App routing", () => {
   });
 
   it.each([
-    "/rooms", "/saved", "/alerts", "/report", "/zones", "/safety-tips",
+    "/rooms", "/saved", "/alerts", "/report", "/verify-email", "/zones", "/safety-tips",
     "/for-caretakers", "/how-verification-works", "/privacy", "/terms", "/caretaker/profile",
-    "/admin", "/admin/verification",
+    "/admin", "/admin/verification", "/auth/google/callback",
   ])("%s has a page", (p) => {
     expect(lastMatch(p)?.route.path).not.toBe("*");
   });

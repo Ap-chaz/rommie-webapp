@@ -65,29 +65,11 @@ describe("student tools (mock service)", () => {
         await deleteAlert(a.id);
         expect(await getAlerts()).toEqual([]);
     });
-    it("walks a student ID through pending to verified, and flags the session", async () => {
-        expect((await getMyVerification("student")).status).toBe("none");
-        await expect(submitVerification("student", new File(["x"], "notes.txt", { type: "text/plain" }))).rejects.toThrow(/photo or a PDF/);
-        await submitVerification("student", png());
-        expect((await getMyVerification("student")).status).toBe("pending");
-        await expect(submitVerification("student", png())).rejects.toThrow(/already/);
-        const mine = (await getVerificationQueue()).find((q) => q.userId === "u1");
-        await expect(reviewVerification(mine.id, "rejected", "  ")).rejects.toThrow(/reason/);
-        await reviewVerification(mine.id, "rejected", "Photo is blurry");
-        const rejected = await getMyVerification("student");
-        expect(rejected.status).toBe("rejected");
-        expect(rejected.request?.reason).toBe("Photo is blurry");
-        await submitVerification("student", png("again.png")); // resubmit after rejection
-        const again = (await getVerificationQueue()).find((q) => q.userId === "u1");
-        await reviewVerification(again.id, "approved");
-        expect((await getMyVerification("student")).status).toBe("approved");
-        expect(getSession()?.studentVerified).toBe(true);
-    });
 });
 describe("admin tools (mock service)", () => {
     it("shows seeded requests oldest first", async () => {
         const q = await getVerificationQueue();
-        expect(q.filter((r) => r.kind === "student").length).toBeGreaterThanOrEqual(2);
+        // student verification removed per Alvan review
         expect(q.filter((r) => r.kind === "caretaker").length).toBeGreaterThanOrEqual(2);
         const times = q.map((r) => +new Date(r.submittedAt));
         expect(times).toEqual([...times].sort((a, b) => a - b));

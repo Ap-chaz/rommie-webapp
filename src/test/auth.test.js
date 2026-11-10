@@ -57,9 +57,20 @@ describe("mock auth service", () => {
         const again = (await getMyListings("c1")).find((x) => x.id === r.id);
         expect(Date.now() - new Date(again.lastConfirmedVacantAt).getTime()).toBeLessThan(5000);
     });
+    it("verifies user with an email OTP code", async () => {
+        const email = "otp.verify@example.com";
+        const u = await signUp({ name: "Email Verify User", email, phone: "+254788112233", password: "password123", role: "student" });
+        expect(u.emailVerified).toBe(false);
+        await sendOtp(email);
+        expect(await verifyOtp(email, "123456")).toEqual({ ok: true });
+        expect(getSession()?.emailVerified).toBe(true);
+        expect(getSession()?.phoneVerified).toBe(true);
+        await logout();
+    });
 });
+
 describe("Phase 2 routes exist", () => {
-    it.each(["/login", "/signup", "/caretaker/login", "/caretaker/signup", "/verify-phone", "/caretaker/post", "/caretaker/listings", "/caretaker/edit/r1"])("%s", (p) => {
+    it.each(["/login", "/signup", "/caretaker/login", "/caretaker/signup", "/verify-email", "/verify-phone", "/caretaker/post", "/caretaker/listings", "/caretaker/edit/r1"])("%s", (p) => {
         expect(matchRoutes(routes, p)?.at(-1)?.route.path).not.toBe("*");
     });
 });

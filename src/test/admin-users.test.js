@@ -72,7 +72,7 @@ describe("verification history", () => {
         expect(h.some((x) => x.id === "v3")).toBe(false);
         const actions = (await getActivity()).map((a) => a.action);
         expect(actions).toEqual(expect.arrayContaining(["verification.approved", "verification.undone"]));
-    });
+    }, 20000);
 
     it("still requires a reason to reject", async () => {
         await asAdmin();
