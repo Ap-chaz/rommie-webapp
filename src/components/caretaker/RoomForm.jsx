@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, SelectInput, TextInput } from "@/components/forms/Field";
 import { controlClass } from "@/components/forms/Field";
-import { MIN_PHOTOS, PhotoUploader } from "@/components/caretaker/PhotoUploader";
+import { REQUIRED_PHOTOS, MIN_PHOTOS, PhotoUploader } from "@/components/caretaker/PhotoUploader";
 import { AMENITY_OPTIONS, amenityFormLabel, AREAS, CAMPUSES, cheapestMonthly, GENDERS, normalizeKenyanPhone, roomTypeLabel } from "@/lib/format";
 import { phoneField } from "@/lib/validation";
 import { cn } from "@/lib/utils";
@@ -136,20 +136,24 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
     const photoError = !triedSubmit ? undefined
         : photos.some((p) => p.status === "uploading") ? "Wait for the photos to finish uploading."
             : photos.some((p) => p.status === "error") ? "Retry or remove the photos that failed."
-                : done.length < MIN_PHOTOS ? `Add at least ${MIN_PHOTOS} photos so students can see the room.`
+                : done.length !== REQUIRED_PHOTOS ? `Please provide all ${REQUIRED_PHOTOS} required photos of the property before publishing. (${done.length} of ${REQUIRED_PHOTOS} added)`
                     : undefined;
     const uploading = photos.some((p) => p.status === "uploading");
     const campusErr = CAMPUSES.flatMap((c) => [errors[`${c.key}Walk`], errors[`${c.key}Matatu`]]).find(Boolean)?.message;
     const bad = (m) => !!m;
     /** After a failed submit, say so and bring the first problem into view: errors can be far below the Post button. */
     const revealProblem = () => {
-        toast.error("Some details are missing or need fixing. Check the fields marked with a message.");
+        if (photos.some((p) => p.status !== "done") || done.length !== REQUIRED_PHOTOS) {
+            toast.error(`Please provide all ${REQUIRED_PHOTOS} required photos of the property before publishing. (${done.length} of ${REQUIRED_PHOTOS} added)`);
+        } else {
+            toast.error("Some details are missing or need fixing. Check the fields marked with a message.");
+        }
         setTimeout(() => {
             document.querySelector("form [role=alert]")?.scrollIntoView({ block: "center", behavior: "smooth" });
         }, 60);
     };
     const valid = async (v) => {
-        if (photos.some((p) => p.status !== "done") || done.length < MIN_PHOTOS)
+        if (photos.some((p) => p.status !== "done") || done.length !== REQUIRED_PHOTOS)
             return revealProblem();
         if (v.roomType === "hostel" && v.roomOptions.some((_, i) => optPhotoError(i, true) !== undefined || (optPhotos[i] ?? []).some((p) => p.status !== "done")))
             return revealProblem();
@@ -178,8 +182,9 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
                 whatsappNumber: normalizeKenyanPhone(v.whatsapp), callNumber: normalizeKenyanPhone(v.call),
             });
         }
-        catch {
-            toast.error("Couldn't save the room. Your details are still here. Try again.");
+        catch (err) {
+            const message = err instanceof Error && err.message ? err.message : "Couldn't save the room. Your details are still here. Try again.";
+            toast.error(message);
         }
     };
     const submit = (e) => {
@@ -316,8 +321,8 @@ export function RoomForm({ initial, accountPhone, submitLabel, onSubmit, }) {
           </Field>
         </Section>)}
 
-      <Section title="Photos" hint={`Add at least ${MIN_PHOTOS} bright, clear photos of the room, the bathroom and the compound.`}>
-        <PhotoUploader items={photos} setItems={setPhotos} error={photoError}/>
+      <Section title="Photos" hint="Add exactly 10 bright, clear photos of the room, the bathroom and the compound.">
+        <PhotoUploader items={photos} setItems={setPhotos} error={photoError} min={REQUIRED_PHOTOS} max={REQUIRED_PHOTOS}/>
       </Section>
 
       <Section title="Contact" hint="Students reach you here. Defaults to your account number.">

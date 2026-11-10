@@ -36,7 +36,16 @@ function Profile() {
 }
 function ProfileBody({ profile, queryKey }) {
     const qc = useQueryClient();
-    const { caretaker, rooms, trust, verification } = profile;
+    const caretaker = profile?.caretaker || {};
+    const rooms = Array.isArray(profile?.rooms) ? profile.rooms : [];
+    const trust = profile?.trust || { score: 0, items: [] };
+    const verification = profile?.verification || { status: "none" };
+
+    const name = caretaker.name?.trim() || "Caretaker";
+    const initial = name.charAt(0).toUpperCase() || "C";
+    const isVerified = Boolean(caretaker.verified || caretaker.isVerified);
+    const phone = caretaker.phone || "No phone listed";
+
     const upload = async (file) => {
         await submitVerification("caretaker", file);
         toast.success("Submitted. We'll review it soon.");
@@ -45,13 +54,13 @@ function ProfileBody({ profile, queryKey }) {
     return (<>
       <header className="flex items-center gap-4">
         <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-hof text-2xl font-semibold text-primary-foreground" aria-hidden>
-          {caretaker.name.trim().charAt(0).toUpperCase()}
+          {initial}
         </span>
         <div className="min-w-0">
-          <h1 className="text-page">{caretaker.name}</h1>
+          <h1 className="text-page">{name}</h1>
           <p className="flex flex-wrap items-center gap-x-1.5 text-foggy">
-            {caretaker.verified ? <><BadgeCheck className="h-4 w-4 text-hof" aria-hidden/> <span className="text-hof">Verified Caretaker</span></> : "Not verified yet"}
-            <span aria-hidden>·</span> {caretaker.phone}
+            {isVerified ? <><BadgeCheck className="h-4 w-4 text-hof" aria-hidden/> <span className="text-hof">Verified Caretaker</span></> : "Not verified yet"}
+            <span aria-hidden>·</span> {phone}
           </p>
         </div>
       </header>
@@ -62,18 +71,18 @@ function ProfileBody({ profile, queryKey }) {
         <section className="rounded-xl bg-card p-5 md:p-6" aria-labelledby="verif-heading">
           <div className="flex items-center justify-between gap-3">
             <h2 id="verif-heading" className="text-section">Verification</h2>
-            <StatusPill status={caretaker.verified ? "approved" : verification.status}/>
+            <StatusPill status={isVerified ? "approved" : (verification.status || "none")}/>
           </div>
           <div className="mt-4 space-y-5">
-            {caretaker.verified ? (<p className="flex items-start gap-2 rounded-[8px] bg-faint p-3">
+            {isVerified ? (<p className="flex items-start gap-2 rounded-[8px] bg-faint p-3">
                 <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden/>
                 <span>You're a <span className="font-semibold">Verified Caretaker</span>. Students see the badge on all your rooms.</span>
               </p>) : (<>
                 <p>Verified caretakers get a badge on every listing, and students contact them more often. Upload your national ID to request it.</p>
-                {verification.status !== "none" && <VerificationSteps state={verification}/>}
+                {verification.status && verification.status !== "none" && <VerificationSteps state={verification}/>}
                 {verification.status === "pending" && <p className="rounded-[8px] bg-faint p-3">A team member will review your ID. This page updates when there's a decision.</p>}
                 <StatusDetail state={verification}/>
-                {(verification.status === "none" || verification.status === "rejected") && (<DocumentUpload label={verification.status === "rejected" ? "Upload a new ID" : "National ID or passport"} help="A clear photo of the front, or a PDF." submitLabel={verification.status === "rejected" ? "Resubmit" : "Request verification"} onSubmit={upload}/>)}
+                {(!verification.status || verification.status === "none" || verification.status === "rejected") && (<DocumentUpload label={verification.status === "rejected" ? "Upload a new ID" : "National ID or passport"} help="A clear photo of the front, or a PDF." submitLabel={verification.status === "rejected" ? "Resubmit" : "Request verification"} onSubmit={upload}/>)}
               </>)}
           </div>
         </section>
@@ -89,12 +98,17 @@ function ProfileBody({ profile, queryKey }) {
           </StateCard>) : (<ul className="space-y-3">
             {rooms.map((r) => {
                 const vacant = r.status === "Vacant";
+                const photo = Array.isArray(r.photos) && r.photos.length > 0 ? r.photos[0] : "";
                 return (<li key={r.id}>
                   <Link to="/rooms/$id" params={{ id: r.id }} disabled={!!r.hidden} className="flex items-center gap-4 rounded-xl bg-card p-3 hover:bg-bebe/40">
-                    <img src={r.photos[0]} alt="" width={64} height={64} loading="lazy" className={cn("h-16 w-16 shrink-0 rounded-lg bg-deco object-cover", !vacant && "opacity-70")}/>
+                    {photo ? (
+                      <img src={photo} alt="" width={64} height={64} loading="lazy" className={cn("h-16 w-16 shrink-0 rounded-lg bg-deco object-cover", !vacant && "opacity-70")}/>
+                    ) : (
+                      <div className={cn("h-16 w-16 shrink-0 rounded-lg bg-deco flex items-center justify-center text-foggy text-xs", !vacant && "opacity-70")}>No photo</div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{r.title}</p>
-                      <p className="truncate text-foggy">{r.area} · {roomTypeLabel[r.roomType]} · {formatKes(r.rentKes)}/month</p>
+                      <p className="truncate text-foggy">{r.area} · {roomTypeLabel[r.roomType] || r.roomType} · {formatKes(r.rentKes)}/month</p>
                     </div>
                     <p className="hidden shrink-0 text-foggy sm:block">
                       {r.hidden ? "Hidden by Rommie" : vacant ? `Vacant · confirmed ${daysAgoLabel(daysSince(r.lastConfirmedVacantAt))}` : "Taken"}
