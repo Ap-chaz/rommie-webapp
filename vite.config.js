@@ -11,4 +11,18 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(root, "./src") },
   },
+  server: {
+    allowedHosts: [
+      "smudgy-sitter-snugness.ngrok-free.dev",
+      ".ngrok-free.dev",
+      ".ngrok.app",
+      ".ngrok-free.app",
+    ],
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+      },
+    },
+  },
 });

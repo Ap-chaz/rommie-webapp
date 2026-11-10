@@ -9,9 +9,14 @@ pnpm-debug.log*
 node_modules
 dist
 *.local
+.env
 
 # Vercel
 .vercel
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Editor / OS
 .vscode/*
