@@ -22,10 +22,11 @@ export function LoginForm({ role, redirect }) {
     const f = useForm({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
     const { errors, isSubmitting } = f.formState;
     const finish = (user) => {
-        toast.success(`Welcome back, ${user.name.split(" ")[0]}`);
-        // Anyone without a confirmed phone number (including new Google accounts) confirms it first.
-        if (!user.phoneVerified)
-            void navigate({ to: "/verify-phone", search: redirect ? { redirect } : {} });
+        const firstName = user?.name ? user.name.split(" ")[0] : "there";
+        toast.success(`Welcome back, ${firstName}`);
+        const isVerified = Boolean(user.emailVerified ?? user.phoneVerified);
+        if (!isVerified)
+            void navigate({ to: "/verify-email", search: redirect ? { redirect } : {} });
         else
             goAfter(user, redirect);
     };
@@ -62,6 +63,6 @@ export function LoginForm({ role, redirect }) {
         </Button>
       </form>
       <OrDivider />
-      <GoogleButton role={role} onDone={finish}/>
+      <GoogleButton role={role} onDone={finish} redirect={redirect}/>
     </AuthShell>);
 }

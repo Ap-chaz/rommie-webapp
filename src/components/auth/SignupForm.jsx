@@ -53,8 +53,8 @@ export function SignupForm({ role, redirect }) {
                 password: v.password,
                 role,
             });
-            toast.success("Account created. Let's verify your number.");
-            await navigate({ to: "/verify-phone", search: redirect ? { redirect } : {} });
+            toast.success("Account created. Check your email for your verification code.");
+            await navigate({ to: "/verify-email", search: redirect ? { redirect } : {} });
         }
         catch (e) {
             if (e instanceof AuthError && e.field && e.field !== "code")
@@ -63,7 +63,7 @@ export function SignupForm({ role, redirect }) {
                 toast.error("Couldn't create your account. Check your connection and try again.");
         }
     });
-    return (<AuthShell title={caretaker ? "List your rooms" : "Create your account"} subtitle={caretaker ? "Free for caretakers and landlords. Post a room in about two minutes." : "Save rooms and get a text when a matching room opens."} footer={<div className="space-y-1">
+    return (<AuthShell title={caretaker ? "List your rooms" : "Create your account"} subtitle={caretaker ? "Free for caretakers and landlords. Post a room in about two minutes." : "Save rooms and get email alerts when a matching room opens."} footer={<div className="space-y-1">
           <p>
             Already have an account?{" "}
             <Link to={caretaker ? "/caretaker/login" : "/login"} search={redirect ? { redirect } : {}} className="font-medium text-hof underline">Log in</Link>
@@ -96,7 +96,7 @@ export function SignupForm({ role, redirect }) {
         <Field label="Email" error={errors.email?.message} required>
           {(p) => <TextInput {...p} type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" {...f.register("email")}/>}
         </Field>
-        <Field label="Phone number" error={errors.phone?.message} hint="We'll text you a code to confirm it." required>
+        <Field label="Phone number" error={errors.phone?.message} hint="Used by caretakers and students to reach you on WhatsApp or calls." required>
           {(p) => <TextInput {...p} type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" {...f.register("phone")}/>}
         </Field>
         <Field label="Password" error={errors.password?.message} hint="At least 8 characters." required>
@@ -110,12 +110,14 @@ export function SignupForm({ role, redirect }) {
         </p>
       </form>
       <OrDivider />
-      <GoogleButton role={role} label="Sign up with Google" onDone={(user) => {
-            toast.success(`Welcome, ${user.name.split(" ")[0]}`);
-            if (user.phoneVerified)
+      <GoogleButton role={role} label="Sign up with Google" redirect={redirect} onDone={(user) => {
+            const firstName = user?.name ? user.name.split(" ")[0] : "there";
+            toast.success(`Welcome, ${firstName}`);
+            const isVerified = Boolean(user.emailVerified ?? user.phoneVerified ?? true);
+            if (isVerified)
                 goAfter(user, redirect);
             else
-                void navigate({ to: "/verify-phone", search: redirect ? { redirect } : {} });
+                void navigate({ to: "/verify-email", search: redirect ? { redirect } : {} });
         }}/>
 
     </AuthShell>);
