@@ -60,6 +60,7 @@ const roleNoun = { student: "students", caretaker: "caretakers", admin: "admins"
  */
 export function RequireRole({ roles, loginPath = "/login", children, }) {
     const { user, ready } = useAuth();
+    const isVerified = Boolean(user?.emailVerified ?? user?.phoneVerified);
     const navigate = useNavigate();
     const href = useCurrentHref();
     // Remember where the guard was first shown, so the redirect target can't become the login page itself
@@ -71,10 +72,10 @@ export function RequireRole({ roles, loginPath = "/login", children, }) {
             return;
         if (!user)
             void navigate({ to: loginPath, search: { redirect: href }, replace: true });
-        else if (!user.phoneVerified)
-            void navigate({ to: "/verify-phone", search: { redirect: href }, replace: true });
+        else if (!isVerified)
+            void navigate({ to: "/verify-email", search: { redirect: href }, replace: true });
     }, [ready, user, loginPath, href, at, navigate]);
-    if (!ready || !user || !user.phoneVerified)
+    if (!ready || !user || !isVerified)
         return <GuardPlaceholder />;
     if (!roles.includes(user.role)) {
         return (<div className="page-container py-20 text-center">
@@ -99,8 +100,9 @@ export const redirectSearch = (s) => {
 export function useRedirectIfSignedIn(redirect) {
     const { user, ready } = useAuth();
     const goAfter = useGoAfterAuth();
+    const isVerified = Boolean(user?.emailVerified ?? user?.phoneVerified);
     useEffect(() => {
-        if (ready && user && user.phoneVerified)
+        if (ready && user && isVerified)
             goAfter(user, redirect);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ready, user, redirect]);

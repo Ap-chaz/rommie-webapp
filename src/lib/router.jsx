@@ -8,6 +8,8 @@
 import { forwardRef, useCallback, useMemo } from "react";
 import { Link as RouterLink, useLocation, useNavigate as useRouterNavigate } from "react-router-dom";
 
+export { useLocation };
+
 /* ---------- search params <-> plain objects ---------- */
 
 /** "?a=1&b=x" -> { a: 1, b: "x" }. Values that are valid JSON (numbers, booleans, arrays) are decoded. */

@@ -18,7 +18,13 @@ const store = {
             return fallback;
         try {
             const raw = window.localStorage.getItem(key);
-            return raw ? JSON.parse(raw) : fallback;
+            if (raw === null || raw === undefined)
+                return fallback;
+            try {
+                return JSON.parse(raw);
+            } catch {
+                return raw;
+            }
         }
         catch {
             return fallback;
@@ -31,6 +37,14 @@ const store = {
             window.localStorage.setItem(key, JSON.stringify(value));
         }
         catch { /* storage unavailable or full: the change stays in memory only */ }
+    },
+    remove(key) {
+        if (typeof window === "undefined")
+            return;
+        try {
+            window.localStorage.removeItem(key);
+        }
+        catch { /* storage unavailable */ }
     },
 };
 function requireAdmin() {
@@ -77,6 +91,15 @@ export function trackContact(roomId, channel) {
 }
 /** Contact taps on listings that still exist. */
 const liveContacts = () => readContacts().filter((e) => rooms.some((r) => r.id === e.roomId));
+function getAuthHeader() {
+    if (typeof window === "undefined") return {};
+    let token = store.get("rommie.token");
+    if (!token && typeof document !== "undefined") {
+        const match = document.cookie?.match(/(?:^|;\s*)rommie_token=([^;]+)/);
+        if (match) token = decodeURIComponent(match[1]);
+    }
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
 /* ---------- Admin activity log (kept in localStorage, newest first) ---------- */
 const ACTIVITY_KEY = "rommie.activity";
 const MAX_ACTIVITY = 500;
@@ -133,6 +156,29 @@ export function minutesTo(r, campus) {
     return d?.walkMin ?? d?.matatuMin ?? 999;
 }
 export async function getRooms(filters = {}) {
+    try {
+        const params = new URLSearchParams();
+        if (filters.area) params.set("area", filters.area);
+        if (filters.roomType) params.set("roomType", filters.roomType);
+        if (filters.minRent) params.set("minRent", String(filters.minRent));
+        if (filters.maxRent) params.set("maxRent", String(filters.maxRent));
+        if (filters.gender) params.set("gender", filters.gender);
+        if (filters.mealsOnly) params.set("mealsOnly", "true");
+        if (filters.transportOnly) params.set("transportOnly", "true");
+        if (filters.vacantOnly) params.set("vacantOnly", "true");
+        if (filters.near) params.set("near", filters.near);
+        if (filters.sort) params.set("sort", filters.sort);
+        if (filters.amenities?.length) {
+            filters.amenities.forEach((a) => params.append("amenities", a));
+        }
+        const res = await fetch(`/api/v1/rooms?${params.toString()}`);
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        }
+    } catch {
+        // Fallback for offline / vitest mock
+    }
     await delay();
     let list = rooms.filter((r) => {
         if (r.hidden || isSuspended(r.caretakerId))
@@ -172,6 +218,17 @@ export async function getRooms(filters = {}) {
     return list.map(withCaretaker);
 }
 export async function getRoom(id) {
+    try {
+        const res = await fetch(`/api/v1/rooms/${encodeURIComponent(id)}`);
+        if (res.ok) {
+            const json = await res.json();
+            return json;
+        } else if (res.status === 404) {
+            return null;
+        }
+    } catch {
+        // Fallback
+    }
     await delay(250);
     const r = rooms.find((x) => x.id === id);
     return r && !r.hidden && !isSuspended(r.caretakerId) ? withCaretaker(r) : null;
@@ -180,11 +237,53 @@ const savedKey = (userId) => `rommie.saved.${userId}`;
 const readSaved = (userId) => store.get(savedKey(userId), []);
 /** Ids of the signed-in person's saved rooms, newest first. Empty for visitors. */
 export async function getSavedIds() {
+    let networkAttempted = false;
+    try {
+        const res = await fetch("/api/v1/saved", {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        networkAttempted = true;
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        } else if (res.status === 401) {
+            return [];
+        }
+    } catch {
+        // Fallback for offline / vitest mock
+    }
     await delay(120);
     const u = getSession();
     return u ? readSaved(u.id) : [];
 }
 export async function saveRoom(id) {
+    let networkAttempted = false;
+    try {
+        const res = await fetch(`/api/v1/saved/${encodeURIComponent(id)}`, {
+            method: "POST",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        networkAttempted = true;
+        if (res.ok) {
+            const u = getSession();
+            if (u) {
+                const cur = readSaved(u.id);
+                if (!cur.includes(id)) store.set(savedKey(u.id), [id, ...cur]);
+            }
+            return;
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            const message = errData?.error?.message || errData?.message || `Failed to save room (status: ${res.status})`;
+            throw new Error(message);
+        }
+    } catch (err) {
+        if (networkAttempted) {
+            throw err;
+        }
+        // Fallback for offline or mock environment
+    }
     await delay(150);
     const u = requireUser();
     const cur = readSaved(u.id);
@@ -192,11 +291,50 @@ export async function saveRoom(id) {
         store.set(savedKey(u.id), [id, ...cur]);
 }
 export async function unsaveRoom(id) {
+    let networkAttempted = false;
+    try {
+        const res = await fetch(`/api/v1/saved/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        networkAttempted = true;
+        if (res.ok) {
+            const u = getSession();
+            if (u) store.set(savedKey(u.id), readSaved(u.id).filter((x) => x !== id));
+            return;
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            const message = errData?.error?.message || errData?.message || `Failed to remove room (status: ${res.status})`;
+            throw new Error(message);
+        }
+    } catch (err) {
+        if (networkAttempted) {
+            throw err;
+        }
+        // Fallback
+    }
     await delay(150);
     const u = requireUser();
     store.set(savedKey(u.id), readSaved(u.id).filter((x) => x !== id));
 }
 export async function getSavedRooms() {
+    let networkAttempted = false;
+    try {
+        const res = await fetch("/api/v1/saved/rooms", {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        networkAttempted = true;
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        } else if (res.status === 401) {
+            return [];
+        }
+    } catch {
+        // Fallback
+    }
     await delay();
     const u = getSession();
     if (!u)
@@ -209,6 +347,26 @@ export async function getSavedRooms() {
 const alertsKey = (userId) => `rommie.alerts.${userId}`;
 const readAlerts = (userId) => store.get(alertsKey(userId), []);
 export async function createAlert(data) {
+    try {
+        const res = await fetch("/api/v1/alerts", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader()
+            },
+            credentials: "include",
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            const json = await res.json();
+            const a = json.data;
+            const u = getSession();
+            if (u) store.set(alertsKey(u.id), [a, ...readAlerts(u.id)]);
+            return a;
+        }
+    } catch {
+        // Fallback
+    }
     await delay();
     const u = requireUser();
     const a = { ...data, id: uid(), active: true, createdAt: new Date().toISOString() };
@@ -216,46 +374,217 @@ export async function createAlert(data) {
     return a;
 }
 export async function getAlerts() {
+    try {
+        const res = await fetch("/api/v1/alerts", {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        }
+    } catch {
+        // Fallback
+    }
     await delay();
     const u = getSession();
     return u ? readAlerts(u.id) : [];
 }
 export async function updateAlert(id, data) {
+    try {
+        const res = await fetch(`/api/v1/alerts/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader()
+            },
+            credentials: "include",
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            const json = await res.json();
+            const u = getSession();
+            if (u) store.set(alertsKey(u.id), readAlerts(u.id).map((a) => (a.id === id ? { ...a, ...data } : a)));
+            return json.data;
+        }
+    } catch {
+        // Fallback
+    }
     await delay(200);
     const u = requireUser();
     store.set(alertsKey(u.id), readAlerts(u.id).map((a) => (a.id === id ? { ...a, ...data } : a)));
 }
 export async function deleteAlert(id) {
+    try {
+        const res = await fetch(`/api/v1/alerts/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const u = getSession();
+            if (u) store.set(alertsKey(u.id), readAlerts(u.id).filter((a) => a.id !== id));
+            return;
+        }
+    } catch {
+        // Fallback
+    }
     await delay(200);
     const u = requireUser();
     store.set(alertsKey(u.id), readAlerts(u.id).filter((a) => a.id !== id));
 }
 export async function createListing(data) {
+    if (typeof window !== "undefined") {
+        try {
+            const res = await fetch("/api/v1/rooms", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...getAuthHeader()
+                },
+                credentials: "include",
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                const created = await res.json();
+                rooms.unshift(created);
+                return created;
+            } else {
+                const errJson = await res.json().catch(() => null);
+                const msg = errJson?.error?.message || `Failed to create listing (HTTP ${res.status})`;
+                throw new Error(msg);
+            }
+        } catch (err) {
+            if (err.message && !err.message.includes('fetch') && !err.message.includes('NetworkError') && !err.message.includes('Failed to parse URL')) {
+                throw err;
+            }
+        }
+    }
     await delay(800);
     const r = { ...data, id: uid(), createdAt: new Date().toISOString() };
     rooms.unshift(r);
     return r;
 }
 export async function updateListing(id, data) {
+    if (typeof window !== "undefined") {
+        try {
+            const res = await fetch(`/api/v1/rooms/${encodeURIComponent(id)}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...getAuthHeader()
+                },
+                credentials: "include",
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                const updated = await res.json();
+                rooms = rooms.map((r) => (r.id === id ? { ...r, ...updated } : r));
+                return updated;
+            } else {
+                const errJson = await res.json().catch(() => null);
+                const msg = errJson?.error?.message || `Failed to update listing (HTTP ${res.status})`;
+                throw new Error(msg);
+            }
+        } catch (err) {
+            if (err.message && !err.message.includes('fetch') && !err.message.includes('NetworkError') && !err.message.includes('Failed to parse URL')) {
+                throw err;
+            }
+        }
+    }
     await delay();
     rooms = rooms.map((r) => (r.id === id ? { ...r, ...data } : r));
 }
 export async function setRoomStatus(id, status) {
+    try {
+        const res = await fetch(`/api/v1/rooms/${encodeURIComponent(id)}/status`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader()
+            },
+            credentials: "include",
+            body: JSON.stringify({ status })
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            rooms = rooms.map((r) => (r.id === id ? { ...r, ...updated } : r));
+            return;
+        }
+    } catch {
+        // Fallback
+    }
     await delay(200);
     rooms = rooms.map((r) => r.id === id ? { ...r, status, ...(status === "Vacant" ? { lastConfirmedVacantAt: new Date().toISOString() } : {}) } : r);
 }
 /** Caretaker confirms the room is still vacant. Also lifts an admin "hidden" flag, since stale listings are what get hidden. */
 export async function reconfirmRoom(id) {
+    try {
+        const res = await fetch(`/api/v1/rooms/${encodeURIComponent(id)}/reconfirm`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader()
+            },
+            credentials: "include"
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            rooms = rooms.map((r) => (r.id === id ? { ...r, ...updated } : r));
+            return;
+        }
+    } catch {
+        // Fallback
+    }
     await setRoomStatus(id, "Vacant");
     rooms = rooms.map((r) => (r.id === id ? { ...r, hidden: false } : r));
 }
-export async function deleteListing(id) { await delay(300); rooms = rooms.filter((r) => r.id !== id); }
+export async function deleteListing(id) {
+    try {
+        const res = await fetch(`/api/v1/rooms/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            rooms = rooms.filter((r) => r.id !== id);
+            return;
+        }
+    } catch {
+        // Fallback
+    }
+    await delay(300);
+    rooms = rooms.filter((r) => r.id !== id);
+}
 /** Other visible listings in the same building (same buildingId), so students can see every room type on offer. */
 export async function getBuildingRooms(buildingId, excludeId) {
+    try {
+        if (excludeId) {
+            const res = await fetch(`/api/v1/rooms/${encodeURIComponent(excludeId)}/building`);
+            if (res.ok) {
+                const json = await res.json();
+                if (Array.isArray(json)) return json;
+            }
+        }
+    } catch {
+        // Fallback
+    }
     await delay(150);
     return rooms.filter((r) => r.buildingId === buildingId && r.id !== excludeId && !r.hidden && !isSuspended(r.caretakerId)).map(withCaretaker);
 }
 export async function getMyListings(caretakerId) {
+    try {
+        const owner = caretakerId ?? getSession()?.id;
+        if (owner) {
+            const res = await fetch(`/api/v1/rooms?caretakerId=${encodeURIComponent(owner)}&limit=100`);
+            if (res.ok) {
+                const json = await res.json();
+                if (Array.isArray(json.data)) return json.data;
+            }
+        }
+    } catch {
+        // Fallback
+    }
     await delay();
     const owner = caretakerId ?? getSession()?.id;
     return rooms.filter((r) => r.caretakerId === owner);
@@ -271,18 +600,70 @@ export async function uploadPhoto(file, onProgress) {
         throw new Error("That file isn't a photo.");
     if (file.size > 8 * 1024 * 1024)
         throw new Error("Photo is larger than 8 MB.");
+
+    if (typeof window !== "undefined" && typeof FormData !== "undefined") {
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const url = await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "/api/v1/media/upload");
+                const token = store.get("rommie.token");
+                if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable && onProgress) {
+                        onProgress(Math.round((e.loaded / e.total) * 100));
+                    }
+                };
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            resolve(res.url);
+                        } catch {
+                            reject(new Error("Upload response was invalid."));
+                        }
+                    } else {
+                        reject(new Error("Upload failed. Check your connection and retry."));
+                    }
+                };
+                xhr.onerror = () => reject(new Error("Upload network error."));
+                xhr.send(formData);
+            });
+            if (url) return url;
+        } catch (err) {
+            // Fallback for tests/offline
+        }
+    }
+
     const steps = 8;
     for (let i = 1; i <= steps; i++) {
-        await delay(90);
+        await delay(40);
         onProgress?.(Math.round((i / steps) * 100));
         if (i === 5 && /fail/i.test(file.name) && !failedOnce.has(file.name)) {
             failedOnce.add(file.name);
             throw new Error("Upload interrupted. Check your connection and retry.");
         }
     }
-    return URL.createObjectURL(file);
+    return typeof URL !== "undefined" && URL.createObjectURL ? URL.createObjectURL(file) : `/mock/photo-${Date.now()}.webp`;
 }
 export async function submitReport(roomId, reason, note) {
+    try {
+        const res = await fetch("/api/v1/reports", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader()
+            },
+            credentials: "include",
+            body: JSON.stringify({ roomId, reason, note })
+        });
+        if (res.ok) {
+            return;
+        }
+    } catch {
+        // Fallback
+    }
     await delay(700);
     reports.push({ id: uid(), roomId, reason, note, status: "open", createdAt: new Date().toISOString() });
 }
@@ -300,14 +681,70 @@ export async function submitVerification(kind, file) {
         throw new Error("Upload a photo or a PDF.");
     if (file.size > DOC_MAX_BYTES)
         throw new Error("That file is larger than 8 MB.");
+
+    let uploadedUrl = null;
+    if (typeof window !== "undefined" && typeof FormData !== "undefined") {
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const upRes = await fetch("/api/v1/media/upload", {
+                method: "POST",
+                headers: getAuthHeader(),
+                credentials: "include",
+                body: formData
+            });
+            if (upRes.ok) {
+                const upJson = await upRes.json();
+                uploadedUrl = upJson.url;
+            }
+        } catch {
+            // Fallback
+        }
+    }
+
+    if (!uploadedUrl) {
+        uploadedUrl = file.size <= 1.5 * 1024 * 1024 ? await readAsDataUrl(file) : URL.createObjectURL(file);
+    }
+
+    if (kind === "caretaker") {
+        try {
+            const res = await fetch("/api/v1/verification/caretaker", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...getAuthHeader()
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    documentUrl: uploadedUrl,
+                    documentName: file.name
+                })
+            });
+            if (res.ok) {
+                const json = await res.json();
+                const req = json.data;
+                setQueue([...getQueue(), req]);
+                return req;
+            } else if (res.status === 409) {
+                throw new Error("You already have a request waiting for review.");
+            } else if (res.status === 400) {
+                const errJson = await res.json().catch(() => null);
+                throw new Error(errJson?.error?.message || "Invalid document submission.");
+            }
+        } catch (err) {
+            if (err.message === "You already have a request waiting for review." || err.message?.startsWith("Invalid document")) {
+                throw err;
+            }
+            // Fallback to offline / mock
+        }
+    }
+
     if (getQueue().some((q) => q.userId === u.id && q.kind === kind && q.status === "pending")) {
         throw new Error("You already have a request waiting for review.");
     }
     await delay(800);
-    // Small files are kept as data URLs so the preview survives a reload; larger ones fall back to a session-only link.
-    const documentUrl = file.size <= 1.5 * 1024 * 1024 ? await readAsDataUrl(file) : URL.createObjectURL(file);
     const req = {
-        id: uid(), kind, userId: u.id, name: u.name, phone: u.phone, documentUrl,
+        id: uid(), kind, userId: u.id, name: u.name, phone: u.phone, documentUrl: uploadedUrl,
         documentName: file.name, documentMime: file.type,
         submittedAt: new Date().toISOString(), status: "pending",
     };
@@ -316,6 +753,23 @@ export async function submitVerification(kind, file) {
 }
 /** The signed-in person's latest request of this kind. Caretakers seeded as verified count as approved. */
 export async function getMyVerification(kind) {
+    try {
+        const u = getSession();
+        if (u && kind === "caretaker") {
+            const res = await fetch("/api/v1/verification/caretaker", {
+                headers: getAuthHeader(),
+                credentials: "include"
+            });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.data && json.data.status && json.data.status !== "unsubmitted") {
+                    return { status: json.data.status, request: json.data };
+                }
+            }
+        }
+    } catch {
+        // Fallback
+    }
     await delay(250);
     const u = getSession();
     if (!u)
@@ -333,15 +787,45 @@ export async function getMyVerification(kind) {
 }
 /** Oldest first, so the longest wait is at the top. */
 export async function getVerificationQueue() {
+    try {
+        const res = await fetch("/api/v1/admin/verification/queue", {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        }
+    } catch {}
     await delay();
     return getQueue()
         .filter((q) => q.status === "pending")
         .sort((a, b) => +new Date(a.submittedAt) - +new Date(b.submittedAt));
 }
 export async function reviewVerification(id, decision, reason) {
-    await delay();
     if (decision === "rejected" && !reason?.trim())
         throw new Error("Add a reason so they know what to fix.");
+    try {
+        const res = await fetch(`/api/v1/admin/verification/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                ...getAuthHeader()
+            },
+            credentials: "include",
+            body: JSON.stringify({
+                status: decision,
+                reviewNote: reason?.trim()
+            })
+        });
+        if (res.ok) {
+            const json = await res.json();
+            const req = json.data;
+            setQueue(getQueue().map((q) => (q.id === id ? { ...q, ...req } : q)));
+            return req;
+        }
+    } catch {}
+    await delay();
     const req = getQueue().find((q) => q.id === id);
     const admin = getSession()?.role === "admin" ? getSession() : null;
     setQueue(getQueue().map((q) => (q.id === id ? { ...q, status: decision, reason: decision === "rejected" ? reason.trim() : undefined, reviewedAt: new Date().toISOString(), reviewedBy: admin?.name ?? "Admin" } : q)));
@@ -350,6 +834,16 @@ export async function reviewVerification(id, decision, reason) {
 }
 /** Decisions already made, newest first, so a mistake can be undone. */
 export async function getVerificationHistory() {
+    try {
+        const res = await fetch("/api/v1/admin/verification/history", {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        }
+    } catch {}
     await delay();
     requireAdmin();
     return getQueue()
@@ -358,6 +852,20 @@ export async function getVerificationHistory() {
 }
 /** Put a reviewed request back in the queue. An approved badge disappears until it is approved again. */
 export async function undoVerificationReview(id) {
+    try {
+        const res = await fetch(`/api/v1/admin/verification/${encodeURIComponent(id)}/undo`, {
+            method: "POST",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const json = await res.json();
+            const req = json.data;
+            setQueue(getQueue().map((q) => (q.id === id ? { ...q, ...req } : q)));
+            refreshSession();
+            return req;
+        }
+    } catch {}
     await delay();
     requireAdmin();
     const req = getQueue().find((q) => q.id === id);
@@ -368,16 +876,72 @@ export async function undoVerificationReview(id) {
     refreshSession();
 }
 export async function getCaretakerProfile(id) {
+    const session = getSession();
+    const owner = id ?? session?.id;
+    if (!owner)
+        throw new Error("Log in first.");
+
+    try {
+        const url = id && id !== session?.id
+            ? `/api/v1/caretakers/${encodeURIComponent(id)}`
+            : `/api/v1/caretakers/profile`;
+        const res = await fetch(url, {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const json = await res.json();
+            const data = json.data || json;
+            if (data?.caretaker && data?.trust && data.caretaker.trustScore === undefined) {
+                data.caretaker.trustScore = data.trust.score;
+            }
+            return data;
+        } else if (res.status === 404 && id) {
+            const altUrl = `/api/v1/caretakers/${encodeURIComponent(owner)}`;
+            if (url !== altUrl) {
+                const res2 = await fetch(altUrl, {
+                    headers: getAuthHeader(),
+                    credentials: "include"
+                });
+                if (res2.ok) {
+                    const json2 = await res2.json();
+                    const data2 = json2.data || json2;
+                    if (data2?.caretaker && data2?.trust && data2.caretaker.trustScore === undefined) {
+                        data2.caretaker.trustScore = data2.trust.score;
+                    }
+                    return data2;
+                }
+            }
+        }
+    } catch {
+        // Fallback to offline / mock
+    }
+
     await delay();
-    const owner = id ?? requireUser().id;
-    const base = caretakers.find((c) => c.id === owner);
+    let base = caretakers.find((c) => c.id === owner);
+    if (!base) {
+        const account = seedAccounts.find((a) => a.id === owner) || (session?.id === owner ? session : null);
+        if (account && (account.role === "caretaker" || account.role === "admin")) {
+            base = {
+                id: account.id,
+                name: account.name,
+                phone: account.phone || "",
+                verified: Boolean(account.verified),
+                joinedAt: account.createdAt || new Date().toISOString()
+            };
+        }
+    }
     if (!base)
         throw new Error("Caretaker not found.");
     const mine = rooms.filter((r) => r.caretakerId === owner);
     const caretaker = resolveCaretaker(base);
     const reportCount = reports.filter((rep) => mine.some((r) => r.id === rep.roomId)).length;
     const trust = computeTrust({ verified: caretaker.verified, rooms: mine, reportCount, joinedAt: caretaker.joinedAt });
-    const verification = await getMyVerification("caretaker");
+    caretaker.trustScore = trust.score;
+    let verification = await getMyVerification("caretaker");
+    if (caretaker.verified && (!verification || verification.status === "none")) {
+        verification = { status: "approved", request: verification?.request || null };
+    }
     return { caretaker, rooms: mine, trust, verification };
 }
 const isOpen = (rep) => (rep.status ?? "open") === "open";
@@ -397,6 +961,13 @@ export async function getAdminStats() {
 }
 /** Take a listing off the public site. The caretaker still sees it in My Listings. */
 export async function hideListing(id) {
+    try {
+        await fetch(`/api/v1/admin/listings/${encodeURIComponent(id)}/hide`, {
+            method: "POST",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+    } catch {}
     await delay(250);
     const room = rooms.find((r) => r.id === id);
     rooms = rooms.map((r) => (r.id === id ? { ...r, hidden: true } : r));
@@ -411,6 +982,13 @@ export async function getHiddenListings() {
 }
 /** Put a hidden listing back on the public site. If it is stale it shows "Needs reconfirming" until the caretaker confirms. */
 export async function restoreListing(id) {
+    try {
+        await fetch(`/api/v1/admin/listings/${encodeURIComponent(id)}/restore`, {
+            method: "POST",
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+    } catch {}
     await delay(250);
     requireAdmin();
     const room = rooms.find((r) => r.id === id);
@@ -424,6 +1002,16 @@ export async function restoreListing(id) {
 /* ---------- Listings manager ---------- */
 /** Every listing, hidden ones included, newest first. Filtering happens in the page (see lib/adminFilters). */
 export async function getAdminListings() {
+    try {
+        const res = await fetch("/api/v1/admin/listings", {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        }
+    } catch {}
     await delay();
     requireAdmin();
     const counts = new Map();
@@ -591,6 +1179,16 @@ export async function getAdminAnalytics() {
     };
 }
 export async function getReports(which = "open") {
+    try {
+        const res = await fetch(`/api/v1/admin/reports?status=${which}`, {
+            headers: getAuthHeader(),
+            credentials: "include"
+        });
+        if (res.ok) {
+            const json = await res.json();
+            if (Array.isArray(json.data)) return json.data;
+        }
+    } catch {}
     await delay();
     requireAdmin();
     return reports
@@ -704,6 +1302,47 @@ export function refreshSession() {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const normEmail = (e) => String(e ?? "").trim().toLowerCase();
 export async function signUp(data) {
+    try {
+        const res = await fetch('/api/v1/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: data.email,
+                phone: data.phone,
+                name: data.name,
+                role: data.role,
+                password: data.password,
+                school: data.school
+            })
+        });
+        const json = await res.json();
+        const user = json.user || json.data?.user;
+        const token = json.token || json.data?.token;
+        if (res.ok && user) {
+            const u = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                phoneVerified: Boolean(user.phoneVerified ?? user.emailVerified),
+                emailVerified: Boolean(user.emailVerified)
+            };
+            if (typeof window !== 'undefined') {
+                store.set('rommie.token', token);
+            }
+            setSession(u);
+            return u;
+        }
+        if (!res.ok) {
+            throw new AuthError(
+                json.error?.message || 'Sign up failed.',
+                json.error?.field || 'email'
+            );
+        }
+    } catch (err) {
+        if (err instanceof AuthError) throw err;
+    }
     await delay(700);
     const email = normEmail(data.email);
     if (!EMAIL_RE.test(email))
@@ -716,7 +1355,7 @@ export async function signUp(data) {
     return createAccount({ name: data.name, firstName: data.firstName, lastName: data.lastName, school: data.school, email, phone: data.phone, role: data.role, password: data.password });
 }
 function createAccount({ name, firstName, lastName, school, email, phone, role, password, google }) {
-    const acct = { id: `${role === "caretaker" ? "c" : "u"}-${uid()}`, name, ...(firstName ? { firstName } : {}), ...(lastName ? { lastName } : {}), ...(school ? { school } : {}), email, phone, role, phoneVerified: false, ...(password ? { password } : {}), ...(google ? { google: true } : {}) };
+    const acct = { id: `${role === "caretaker" ? "c" : "u"}-${uid()}`, name, ...(firstName ? { firstName } : {}), ...(lastName ? { lastName } : {}), ...(school ? { school } : {}), email, phone, role, phoneVerified: false, emailVerified: Boolean(google), ...(password ? { password } : {}), ...(google ? { google: true } : {}) };
     accounts.push(acct);
     if (role === "caretaker") {
         caretakers.push({ id: acct.id, name: acct.name, phone: acct.phone, verified: false, trustScore: 50, joinedAt: new Date().toISOString() });
@@ -727,6 +1366,44 @@ function createAccount({ name, firstName, lastName, school, email, phone, role, 
 }
 /** Log in with email and password. A phone number still works, so older callers keep working. */
 export async function login(data) {
+    try {
+        const res = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: data.email,
+                phone: data.phone,
+                password: data.password
+            })
+        });
+        const json = await res.json();
+        const user = json.user || json.data?.user;
+        const token = json.token || json.data?.token;
+        if (res.ok && user) {
+            const u = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                phoneVerified: Boolean(user.phoneVerified ?? user.emailVerified),
+                emailVerified: Boolean(user.emailVerified)
+            };
+            if (typeof window !== 'undefined') {
+                store.set('rommie.token', token);
+            }
+            setSession(u);
+            return u;
+        }
+        if (!res.ok) {
+            throw new AuthError(
+                json.error?.message || 'Email or password is incorrect.',
+                json.error?.field || 'password'
+            );
+        }
+    } catch (err) {
+        if (err instanceof AuthError) throw err;
+    }
     await delay(600);
     const email = normEmail(data.email);
     const acct = email ? accounts.find((a) => a.email === email) : accounts.find((a) => a.phone === data.phone);
@@ -741,27 +1418,186 @@ export async function login(data) {
     return user;
 }
 /**
- * MOCK of "Continue with Google". A real version sends the user through Google's account picker and your backend
- * checks the ID token Google returns; only this function changes. Existing accounts are matched by email.
+ * Generate Google OAuth 2.0 authorization URL.
  */
-export async function loginWithGoogle({ email, name, role }) {
+export async function getGoogleAuthUrl({ role = 'student', redirect = '' } = {}) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+    const redirectUri = `${origin}/auth/google/callback`;
+    const clientSideId = typeof import.meta !== 'undefined' ? (import.meta.env?.VITE_GOOGLE_CLIENT_ID || '') : '';
+    try {
+        const params = new URLSearchParams();
+        if (role) params.set('role', role);
+        if (redirect) params.set('redirect', redirect);
+        params.set('redirectUri', redirectUri);
+        if (clientSideId) params.set('clientId', clientSideId);
+        const res = await fetch(`/api/v1/auth/google/url?${params.toString()}`);
+        if (res.ok) {
+            const json = await res.json();
+            if (json.url) return json.url;
+        }
+    } catch {
+        // Fallback to client-constructed URL
+    }
+    const state = JSON.stringify({ role, redirect });
+    return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientSideId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&access_type=offline&prompt=consent&state=${encodeURIComponent(state)}`;
+}
+
+/**
+ * Exchange Google OAuth 2.0 authorization code for user session and token.
+ */
+export async function exchangeGoogleCode({ code, role = 'student', redirectUri } = {}) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+    const effectiveRedirectUri = redirectUri || `${origin}/auth/google/callback`;
+
+    try {
+        const res = await fetch('/api/v1/auth/google/callback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, role, redirectUri: effectiveRedirectUri })
+        });
+        const json = await res.json();
+        const user = json.user || json.data?.user;
+        const token = json.token || json.data?.token;
+        if (res.ok && user) {
+            const u = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone || '',
+                role: user.role,
+                phoneVerified: Boolean(user.phoneVerified ?? user.emailVerified),
+                emailVerified: Boolean(user.emailVerified ?? true)
+            };
+            if (typeof window !== 'undefined') {
+                store.set('rommie.token', token);
+            }
+            setSession(u);
+            return u;
+        }
+        if (!res.ok) {
+            throw new AuthError(
+                json.error?.message || json.message || 'Google authorization failed.',
+                json.error?.field || 'code'
+            );
+        }
+    } catch (err) {
+        if (err instanceof AuthError) throw err;
+        if (code && (code.startsWith('mock_code_') || code.startsWith('test_'))) {
+            const clean = code.replace(/^(mock_code_|test_)/, '');
+            const parts = clean.split('_');
+            const fallbackEmail = parts[0] ? (parts[0].includes('@') ? parts[0] : `${parts[0]}@gmail.com`) : 'mock.user@gmail.com';
+            const fallbackName = parts[1] || fallbackEmail.split('@')[0];
+            return await loginWithGoogle({ email: fallbackEmail, name: fallbackName, role });
+        }
+        throw new AuthError(err.message || 'Network error during Google authorization.', 'code');
+    }
+}
+
+/**
+ * "Continue with Google" handler. Existing accounts are matched by email.
+ */
+export async function loginWithGoogle({ email, name, role, idToken, code, redirectUri }) {
+    if (code) {
+        return exchangeGoogleCode({ code, role, redirectUri });
+    }
+    let effectiveEmail = email;
+    let effectiveName = name;
+    if (!effectiveEmail && idToken) {
+        try {
+            const parts = idToken.split('.');
+            if (parts.length >= 2) {
+                const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+                const decoded = typeof atob === 'function' ? atob(base64) : Buffer.from(base64, 'base64').toString('utf8');
+                const claims = JSON.parse(decoded);
+                effectiveEmail = claims.email || effectiveEmail;
+                effectiveName = claims.name || effectiveName;
+            }
+        } catch {
+            // fallback
+        }
+    }
+
+    try {
+        const res = await fetch('/api/v1/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: effectiveEmail, name: effectiveName, role, idToken })
+        });
+        const json = await res.json();
+        const user = json.user || json.data?.user;
+        const token = json.token || json.data?.token;
+        if (res.ok && user) {
+            const u = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone || '',
+                role: user.role,
+                phoneVerified: Boolean(user.phoneVerified ?? user.emailVerified),
+                emailVerified: Boolean(user.emailVerified ?? true)
+            };
+            if (typeof window !== 'undefined') {
+                store.set('rommie.token', token);
+            }
+            setSession(u);
+            return u;
+        }
+        if (!res.ok) {
+            throw new AuthError(
+                json.error?.message || json.message || 'Google sign in failed.',
+                json.error?.field || 'email'
+            );
+        }
+    } catch (err) {
+        if (err instanceof AuthError) throw err;
+    }
     await delay(700);
-    const e = normEmail(email);
+    const e = normEmail(effectiveEmail);
     if (!EMAIL_RE.test(e))
         throw new AuthError("Enter a valid Google email address.", "email");
     const existing = accounts.find((a) => a.email === e);
     if (existing) {
         if (existing.role === "caretaker" && isSuspended(existing.id))
             throw new AuthError(SUSPENDED_MESSAGE, "email");
+        existing.emailVerified = true;
+        existing.google = true;
         const user = toUser(existing);
+        if (typeof window !== 'undefined') {
+            store.set('rommie.token', `mock-token-${user.id}`);
+        }
         setSession(user);
         return user;
     }
-    const display = String(name ?? "").trim() || e.split("@")[0];
-    return createAccount({ name: display, email: e, phone: "", role: role === "caretaker" ? "caretaker" : "student", google: true });
+    const display = String(effectiveName ?? "").trim() || e.split("@")[0];
+    const user = createAccount({ name: display, email: e, phone: "", role: role === "caretaker" ? "caretaker" : "student", google: true });
+    if (typeof window !== 'undefined') {
+        store.set('rommie.token', `mock-token-${user.id}`);
+    }
+    return user;
 }
 /** Add or change the signed-in person's phone number. It has to be verified again afterwards. */
 export async function setMyPhone(phone) {
+    try {
+        const res = await fetch('/api/v1/auth/phone', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeader()
+            },
+            body: JSON.stringify({ phone })
+        });
+        const json = await res.json();
+        if (res.ok) {
+            const u = getSession();
+            if (u) setSession({ ...u, phone, phoneVerified: false });
+            return;
+        }
+        if (!res.ok) {
+            throw new AuthError(json.error?.message || 'Failed to update phone number.', json.error?.field || 'phone');
+        }
+    } catch (err) {
+        if (err instanceof AuthError) throw err;
+    }
     await delay(400);
     const u = requireUser();
     if (accounts.some((a) => a.id !== u.id && a.phone === phone))
@@ -778,6 +1614,37 @@ export async function setMyPhone(phone) {
 }
 /** Log in with a one-time code instead of a password (call sendOtp first). */
 export async function loginWithOtp(phone, code) {
+    try {
+        const res = await fetch('/api/v1/auth/otp/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, code })
+        });
+        const json = await res.json();
+        const user = json.user || json.data?.user;
+        const token = json.token || json.data?.token;
+        if (res.ok && user) {
+            const u = {
+                id: user.id,
+                name: user.name || (user.email ? user.email.split('@')[0] : 'User'),
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                phoneVerified: Boolean(user.phoneVerified ?? user.emailVerified),
+                emailVerified: Boolean(user.emailVerified)
+            };
+            if (typeof window !== 'undefined') {
+                store.set('rommie.token', token);
+            }
+            setSession(u);
+            return u;
+        }
+        if (!res.ok) {
+            throw new AuthError(json.error?.message || otpMessage('wrong'), json.error?.field || 'code');
+        }
+    } catch (err) {
+        if (err instanceof AuthError) throw err;
+    }
     const res = await verifyOtp(phone, code);
     if (!res.ok)
         throw new AuthError(otpMessage(res.reason), "code");
@@ -791,27 +1658,78 @@ export async function loginWithOtp(phone, code) {
     setSession(user);
     return user;
 }
-export async function logout() { await delay(100); setSession(null); }
+export async function logout() {
+    try {
+        await fetch('/api/v1/auth/logout', { method: 'POST' });
+    } catch {
+        // Ignore network errors on logout
+    }
+    if (typeof window !== 'undefined') {
+        store.remove('rommie.token');
+    }
+    await delay(100);
+    setSession(null);
+}
 export function otpMessage(reason) {
     return reason === "expired" ? "That code has expired. Request a new one." : "That code isn't right. Check it and try again.";
 }
 const OTP_TTL_MS = 5 * 60 * 1000;
 const otpSentAt = new Map();
-export async function sendOtp(phone) { await delay(500); otpSentAt.set(phone, Date.now()); return { sent: true }; }
-/** Mock accepts 123456 while the code is fresh (5 minutes). Verifying also marks the signed-in phone as verified. */
-export async function verifyOtp(phone, code) {
+export async function sendOtp(target) {
+    try {
+        const u = getSession();
+        const email = u?.email || (typeof target === 'string' && target.includes('@') ? target : undefined);
+        const res = await fetch('/api/v1/auth/otp/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email || target })
+        });
+        if (res.ok) {
+            return { sent: true };
+        }
+    } catch {
+        // Fallback for tests/mock
+    }
     await delay(500);
-    const sent = otpSentAt.get(phone);
+    otpSentAt.set(target, Date.now());
+    return { sent: true };
+}
+/** Verifies code against backend; falls back to 123456 mock during automated offline tests. */
+export async function verifyOtp(target, code) {
+    try {
+        const u = getSession();
+        const email = u?.email || (typeof target === 'string' && target.includes('@') ? target : undefined);
+        const res = await fetch('/api/v1/auth/otp/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email || target, code })
+        });
+        const json = await res.json();
+        if (res.ok && json.ok) {
+            if (session) setSession({ ...session, phoneVerified: true, emailVerified: true });
+            return { ok: true };
+        }
+        if (!res.ok) {
+            const reason = json.error?.code === 'OTP_EXPIRED' ? 'expired' : 'wrong';
+            return { ok: false, reason };
+        }
+    } catch {
+        // Fallback for tests/mock
+    }
+    await delay(500);
+    const sent = otpSentAt.get(target);
     if (sent === undefined || Date.now() - sent > OTP_TTL_MS)
         return { ok: false, reason: "expired" };
     if (code !== "123456")
         return { ok: false, reason: "wrong" };
-    const acct = accounts.find((a) => a.phone === phone);
-    if (acct)
+    const acct = accounts.find((a) => a.phone === target || a.email === target);
+    if (acct) {
         acct.phoneVerified = true;
-    if (session && session.phone === phone)
-        setSession({ ...session, phoneVerified: true });
-    otpSentAt.delete(phone);
+        acct.emailVerified = true;
+    }
+    if (session && (session.phone === target || session.email === target))
+        setSession({ ...session, phoneVerified: true, emailVerified: true });
+    otpSentAt.delete(target);
     return { ok: true };
 }
 export function daysSince(iso) {

@@ -97,7 +97,6 @@ export function SiteHeader() {
                 {me && (<>
                     <DropdownMenuLabel className="px-4 py-2 font-normal">
                       <span className="block font-semibold">{me.name}</span>
-                      {me.studentVerified && <span className="flex items-center gap-1 text-sm"><BadgeCheck className="h-4 w-4" aria-hidden/> Verified Student</span>}
                       <span className="block text-foggy capitalize">{me.role}</span>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -133,7 +132,7 @@ export function SiteHeader() {
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-xl border-0 pb-[calc(2rem+env(safe-area-inset-bottom))]">
           <SheetHeader className="text-left">
             <SheetTitle className="text-section">{me ? me.name : "Welcome to Rommie"}</SheetTitle>
-            {me && <p className="flex items-center gap-1 text-foggy"><span className="capitalize">{me.role}</span>{me.studentVerified && <><span aria-hidden>·</span><BadgeCheck className="h-4 w-4 text-hof" aria-hidden/><span className="text-hof">Verified Student</span></>}</p>}
+            {me && <p className="flex items-center gap-1 text-foggy"><span className="capitalize">{me.role}</span></p>}
           </SheetHeader>
           <ul className="mt-2 divide-y divide-bebe">
             {items.map((i) => (<li key={i.to}>
